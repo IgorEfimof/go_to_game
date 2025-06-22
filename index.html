@@ -141,11 +141,14 @@
             transform: translateY(100%);
             transition: transform 0.3s ease-out;
             display: none; /* Изначально скрыто */
+            box-sizing: border-box; /* Важно для корректного padding */
         }
 
         #custom-keyboard-container.show {
             transform: translateY(0);
             display: flex; /* Показываем как flex-контейнер */
+            justify-content: center; /* Центрируем содержимое клавиатуры */
+            align-items: center; /* Центрируем содержимое клавиатуры */
         }
 
         #custom-keyboard {
@@ -153,7 +156,7 @@
             grid-template-columns: repeat(3, 1fr); /* 3 колонки */
             gap: 8px; /* Расстояние между кнопками */
             max-width: 300px; /* Ограничиваем ширину клавиатуры */
-            margin: 0 auto; /* Центрируем клавиатуру */
+            width: 100%; /* Занимаем всю доступную ширину в max-width */
         }
 
         #custom-keyboard button {
@@ -189,6 +192,12 @@
         #custom-keyboard button.decimal-btn:active {
             background-color: #0056b3;
         }
+        #custom-keyboard button.next-btn { /* Добавляем стиль для возможной кнопки "Далее" */
+            background-color: #28a745;
+        }
+        #custom-keyboard button.next-btn:active {
+            background-color: #218838;
+        }
 
         /* Медиа-запрос для широких планшетов/десктопов, чтобы не делать слишком узко */
         @media (min-width: 768px) {
@@ -196,10 +205,20 @@
                 max-width: 320px; /* Возвращаем к исходной ширине на более широких экранах */
             }
             .form-container {
-                /* На более широких экранах можно дать больше высоты, если это не мешает */
                 max-height: calc(100vh - 20px);
             }
         }
+        /* Усиленная подсветка активного поля */
+        input.form-control:focus {
+            border-color: #007bff !important; /* Яркий синий, как у Bootstrap Primary */
+            box-shadow: 0 0 0 0.15rem rgba(0, 123, 255, 0.25) !important; /* Легкая тень */
+            outline: none; /* Убираем стандартный аутлайн */
+        }
+
+        /* Стили для текстовых индикаторов результата */
+        .text-success-custom { color: #28a745 !important; } /* Зеленый для победителя */
+        .text-danger-custom { color: #dc3545 !important; } /* Красный для проигравшего/неопределенности */
+        .text-info-custom { color: #17a2b8 !important; }   /* Синий для информационных сообщений */
     </style>
 </head>
 <body class="bg-dark-custom">
@@ -217,7 +236,7 @@
                 </div>
 
                 <div class="row align-items-center mb-1">
-                    <div class="col-2 text-end fw-bold"></div>
+                    <div class="col-2 text-end fw-bold">Гейм 5</div>
                     <div class="col-4">
                         <label for="g5P1" class="form-label visually-hidden">Кф. Г5 И1</label>
                         <input id="g5P1" name="g5P1" type="text" class="form-control form-control-sm text-center" maxlength="4" inputmode="decimal" autocomplete="off" placeholder="1.85" readonly>
@@ -228,7 +247,7 @@
                     </div>
                 </div>
                 <div class="row align-items-center mb-1">
-                    <div class="col-2 text-end fw-bold"></div>
+                    <div class="col-2 text-end fw-bold">Гейм 6</div>
                     <div class="col-4">
                         <label for="g6P1" class="form-label visually-hidden">Кф. Г6 И1</label>
                         <input id="g6P1" name="g6P1" type="text" class="form-control form-control-sm text-center" maxlength="4" inputmode="decimal" autocomplete="off" placeholder="1.85" readonly>
@@ -239,7 +258,7 @@
                     </div>
                 </div>
                 <div class="row align-items-center mb-1">
-                    <div class="col-2 text-end fw-bold"></div>
+                    <div class="col-2 text-end fw-bold">Гейм 7</div>
                     <div class="col-4">
                         <label for="g7P1" class="form-label visually-hidden">Кф. Г7 И1</label>
                         <input id="g7P1" name="g7P1" type="text" class="form-control form-control-sm text-center" maxlength="4" inputmode="decimal" autocomplete="off" placeholder="1.85" readonly>
@@ -250,7 +269,7 @@
                     </div>
                 </div>
                 <div class="row align-items-center mb-1">
-                    <div class="col-2 text-end fw-bold"></div>
+                    <div class="col-2 text-end fw-bold">Гейм 8</div>
                     <div class="col-4">
                         <label for="g8P1" class="form-label visually-hidden">Кф. Г8 И1</label>
                         <input id="g8P1" name="g8P1" type="text" class="form-control form-control-sm text-center" maxlength="4" inputmode="decimal" autocomplete="off" placeholder="1.85" readonly>
@@ -261,7 +280,7 @@
                     </div>
                 </div>
                 <div class="row align-items-center mb-1">
-                    <div class="col-2 text-end fw-bold"></div>
+                    <div class="col-2 text-end fw-bold">Гейм 9</div>
                     <div class="col-4">
                         <label for="g9P1" class="form-label visually-hidden">Кф. Г9 И1</label>
                         <input id="g9P1" name="g9P1" type="text" class="form-control form-control-sm text-center" maxlength="4" inputmode="decimal" autocomplete="off" placeholder="1.85" readonly>
@@ -272,7 +291,7 @@
                     </div>
                 </div>
                 <div class="row align-items-center mb-1">
-                    <div class="col-2 text-end fw-bold"></div>
+                    <div class="col-2 text-end fw-bold">Гейм 10</div>
                     <div class="col-4">
                         <label for="g10P1" class="form-label visually-hidden">Кф. Г10 И1</label>
                         <input id="g10P1" name="g10P1" type="text" class="form-control form-control-sm text-center" maxlength="4" inputmode="decimal" autocomplete="off" placeholder="1.85" readonly>
@@ -291,16 +310,17 @@
                 <h4 class="text-center">Результат:</h4>
                 <p id="player1_sum"></p>
                 <p id="player2_sum"></p>
-                <h5 id="overall_winner_decimal_sum" class="text-center text-success"></h5>
+                <h5 id="overall_winner_decimal_sum" class="text-center"></h5>
+                <h5 id="decimal_sum_verdict" class="text-center mt-2"></h5>
+
 
                 <hr>
                 <h5 class="text-center">Анализ разбега Кф.:</h5>
                 <p id="p1_spread_summary"></p>
                 <p id="p2_spread_summary"></p>
-                <h5 id="overall_winner_spread_analysis" class="text-center text-info"></h5>
-
-                <hr>
-                <h5 id="overall_winner_smallest_decimal" class="text-center text-warning"></h5>
+                <h5 id="overall_winner_spread_analysis" class="text-center"></h5>
+                <p id="last_game_spread_dynamic" class="text-center mt-2"></p> <hr>
+                <h5 id="overall_winner_smallest_decimal" class="text-center"></h5>
             </div>
             <div id="error" class="mt-4 alert alert-danger"></div>
         </div>
@@ -320,7 +340,7 @@
             <button data-key="delete" class="delete-btn">←</button>
             <button data-key="0">0</button>
             <button data-key="." class="decimal-btn">.</button>
-            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
