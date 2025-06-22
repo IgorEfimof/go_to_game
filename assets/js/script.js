@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const mainContentBlock = document.getElementById('main-content-block'); // Основной блок с формой и результатами
     const resultDiv = document.getElementById('result');
     const errorDiv = document.getElementById('error');
-    const errorText = document.getElementById('error');
+    const errorText = document.getElementById('error'); // Правильно ссылается на errorDiv
 
     const keyboardContainer = document.getElementById('custom-keyboard-container');
     const keyboard = document.getElementById('custom-keyboard');
@@ -25,38 +25,47 @@ document.addEventListener('DOMContentLoaded', function() {
     function showKeyboard(input) {
         console.log('showKeyboard called for input:', input.id);
         if (activeInput === input && keyboardContainer.classList.contains('show')) {
+            // Если тот же инпут уже активен и клавиатура показана, ничего не делаем.
             return;
         }
 
         activeInput = input;
+        // Устанавливаем курсор в конец поля
         input.setSelectionRange(input.value.length, input.value.length);
+        
+        // Убедимся, что основной блок виден, а блок прогноза скрыт
+        mainContentBlock.classList.remove('hidden');
+        mainContentBlock.classList.add('visible'); // Убедимся, что visible тоже есть
+        aiPredictionBlock.classList.remove('visible');
+        aiPredictionBlock.style.display = 'none'; // Полностью скрываем блок прогноза
 
+        // Скрываем обычные результаты и ошибки, если они были видны
+        resultDiv.classList.remove('visible');
+        errorDiv.classList.remove('visible');
+
+        // Показываем клавиатуру
         keyboardContainer.style.display = 'flex';
         setTimeout(() => {
             keyboardContainer.classList.add('show');
-        }, 50);
-
-        // Убедимся, что основной блок виден, а блок прогноза скрыт
-        mainContentBlock.classList.add('visible');
-        mainContentBlock.classList.remove('hidden');
-        aiPredictionBlock.classList.remove('visible');
-        aiPredictionBlock.style.display = 'none';
-
-        resultDiv.classList.remove('visible');
-        errorDiv.classList.remove('visible');
+        }, 50); // Небольшая задержка для плавности
     }
 
     function hideKeyboardAndShowPrediction() {
         console.log('hideKeyboardAndShowPrediction called.');
+        
+        if (activeInput) {
+            activeInput.blur(); // Принудительно убираем фокус с активного поля
+            activeInput = null;
+        }
+
         keyboardContainer.classList.remove('show');
         keyboardContainer.addEventListener('transitionend', function handler() {
-            keyboardContainer.style.display = 'none';
+            keyboardContainer.style.display = 'none'; // Полностью скрываем после анимации
             keyboardContainer.removeEventListener('transitionend', handler);
-            activeInput = null;
             
-            // После скрытия клавиатуры, показываем AI-прогноз
+            // После полного скрытия клавиатуры, показываем AI-прогноз
             displayAiPrediction();
-        }, { once: true });
+        }, { once: true }); // Убедимся, что обработчик срабатывает только один раз
     }
 
     // Обработчики событий для полей ввода
@@ -69,25 +78,28 @@ document.addEventListener('DOMContentLoaded', function() {
 
             input.addEventListener('touchstart', function(e) {
                 console.log('Input touchstarted:', this.id);
-                e.preventDefault();
+                e.preventDefault(); // Предотвращаем стандартное поведение (показ нативной клавиатуры)
                 if (document.activeElement !== this) {
-                    this.focus();
+                    this.focus(); // Устанавливаем фокус, если его нет
                 }
             }, { passive: false });
 
-            input.addEventListener('blur', function(e) {
-                console.log('Input blurred:', this.id, 'relatedTarget:', e.relatedTarget ? e.relatedTarget.tagName : 'none');
-            });
-
+            // Обработчик `input` для автоматического перехода и завершения
             input.addEventListener('input', function(e) {
                 console.log('Input value changed:', this.id, this.value);
-                let val = this.value.replace(/[^\d.]/g, '');
+                let val = this.value.replace(/[^\d.]/g, ''); // Удаляем все, кроме цифр и точки
+
+                // Логика для форматирования "1.85"
                 const parts = val.split('.');
                 if (parts.length > 2) {
-                    val = parts[0] + '.' + parts.slice(1).join('');
+                    val = parts[0] + '.' + parts.slice(1).join(''); // Удаляем лишние точки
                 }
                 if (parts[0].length > 1 && !val.includes('.')) {
-                    val = parts[0].substring(0,1) + '.' + parts[0].substring(1,3);
+                    // Если введено более 1 цифры и нет точки, добавляем точку после первой цифры
+                    val = parts[0].substring(0,1) + '.' + parts[0].substring(1);
+                    if (val.length > this.maxLength) { // Обрезаем, если стало длиннее
+                         val = val.substring(0, this.maxLength);
+                    }
                 }
                 if (val.length > this.maxLength) {
                     val = val.substring(0, this.maxLength);
@@ -95,15 +107,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.value = val;
 
                 // Автоматический переход к следующему полю, если текущее заполнено
+                // Или скрытие клавиатуры, если это последнее поле
                 if (this.value.length === this.maxLength && !this.value.endsWith('.')) {
                     const currentIndex = inputElements.indexOf(this);
                     if (currentIndex !== -1 && currentIndex < inputElements.length - 1) {
+                        // Переход к следующему полю с небольшой задержкой
                         setTimeout(() => {
                             inputElements[currentIndex + 1].focus();
-                        }, 10);
+                        }, 50); // Небольшая задержка для анимации фокуса
                     } else if (currentIndex === inputElements.length - 1) {
-                        // Если это последнее поле и оно заполнено, скрываем клавиатуру и показываем прогноз
-                        this.blur();
+                        // Если это последнее поле и оно заполнено, скрываем клавиатуру
                         hideKeyboardAndShowPrediction();
                     }
                 }
@@ -113,13 +126,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Обработчик кликов по кнопкам клавиатуры
     keyboard.addEventListener('click', function(e) {
-        e.preventDefault();
+        e.preventDefault(); // Предотвращаем потерю фокуса активного поля
         const button = e.target.closest('button');
         if (!button) return;
 
         if (!activeInput) {
             console.warn('No active input, keyboard button click ignored.');
-            return;
+            // Если нет активного поля, но клавиатура показана, попробуем найти первое пустое поле
+            const firstEmptyInput = inputElements.find(input => input.value === '');
+            if (firstEmptyInput) {
+                showKeyboard(firstEmptyInput);
+            } else {
+                // Если все поля заполнены, это может быть баг или пользователь пытается нажать после заполнения
+                return; 
+            }
         }
 
         const key = button.dataset.key;
@@ -131,6 +151,7 @@ document.addEventListener('DOMContentLoaded', function() {
             activeInput.value = currentValue.slice(0, -1);
         } else if (key === '.') {
             if (!currentValue.includes('.')) {
+                // Если поле пустое и пользователь нажимает '.', добавляем '1.'
                 if (currentValue === '') {
                     activeInput.value = '1.';
                 } else {
@@ -138,13 +159,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         } else if (currentValue.length < activeInput.maxLength) {
+            // Добавляем цифру
             if (currentValue === '1.' && key === '0' && activeInput.maxLength === 4) {
-                 activeInput.value = '1.0';
-            } else {
+                 activeInput.value = '1.0'; // Для случая "1." -> "1.0"
+            } else if (currentValue.length === 1 && !currentValue.includes('.') && key !== '.' && activeInput.maxLength === 4) {
+                // Если введено 1 цифра (например, '1') и нет точки, и это не точка, и макс длина 4 (т.е. 1.00), то вставляем '1.' + новую цифру
+                activeInput.value = currentValue + '.' + key;
+            }
+            else {
                 activeInput.value += key;
             }
         }
 
+        // Принудительно вызываем событие 'input' для обновления UI и логики
         const event = new Event('input', { bubbles: true });
         activeInput.dispatchEvent(event);
     });
@@ -162,13 +189,14 @@ document.addEventListener('DOMContentLoaded', function() {
         errorText.textContent = '';
 
         // Показываем основной блок, скрываем AI-прогноз
-        mainContentBlock.classList.remove('hidden');
-        mainContentBlock.classList.add('visible');
         aiPredictionBlock.classList.remove('visible');
         aiPredictionBlock.style.display = 'none'; // Скрываем блок прогноза сразу
 
+        mainContentBlock.classList.remove('hidden');
+        mainContentBlock.classList.add('visible'); // Убедимся, что основной блок виден
+        
         if (inputElements.length > 0) {
-            inputElements[0].focus();
+            inputElements[0].focus(); // Фокусируем на первом поле
             showKeyboard(inputElements[0]); // Убедимся, что клавиатура показана
         }
         calculateWinner(); // Пересчитываем, чтобы обновить состояние после очистки
@@ -184,8 +212,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // --- Main Calculation Function ---
-    // Эта функция теперь просто обновляет отображение результатов в `resultDiv`.
-    // Определение AI-прогноза перенесено в `getAiPrediction`.
+    // (Остается без изменений, так как она только вычисляет и обновляет resultDiv)
     function calculateWinner() {
         console.log('calculateWinner called.');
         let player1Coeffs = [];
@@ -205,6 +232,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const isP1Valid = !isNaN(p1Val) && p1Val >= 1.00 && p1Val <= 10.00;
                 const isP2Valid = !isNaN(p2Val) && p2Val >= 1.00 && p2Val <= 10.00;
 
+                // Валидация для пустых полей или некорректных значений
                 if (p1Input.value.length > 0 && !isP1Valid) {
                     p1Input.classList.add('is-invalid');
                     allCoeffsValid = false;
@@ -228,33 +256,34 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        const hasMinimumInput = !isNaN(player1Coeffs[0]) && !isNaN(player2Coeffs[0]);
+        // Проверка на минимальное количество заполненных данных (хотя бы гейм 5)
+        const hasMinimumInput = (inputElements[0] && inputElements[0].value.length > 0) && (inputElements[1] && inputElements[1].value.length > 0);
 
         if (!allCoeffsValid) {
             errorText.textContent = 'Проверьте формат коэффициентов (например, 1.85). Значения должны быть от 1.00 до 10.00.';
             errorDiv.classList.add('visible');
             resultDiv.classList.remove('visible');
-            return;
+            return null; // Возвращаем null, чтобы indicate error
         }
 
         if (!hasMinimumInput) {
             errorText.textContent = 'Для расчета необходимо заполнить коэффициенты для Гейма 5.';
             errorDiv.classList.add('visible');
             resultDiv.classList.remove('visible');
-            return;
+            return null; // Возвращаем null, чтобы indicate error
         }
 
         errorText.textContent = '';
         errorDiv.classList.remove('visible');
 
-        // Показываем результат, если нет активной клавиатуры и нет ошибок
-        if (!keyboardContainer.classList.contains('show')) {
+        // Показываем результат только если нет активной клавиатуры (иначе будет конфликт)
+        if (!keyboardContainer.classList.contains('show') && !mainContentBlock.classList.contains('hidden')) {
             resultDiv.classList.add('visible');
         } else {
             resultDiv.classList.remove('visible');
         }
 
-
+        // Расчеты (сумма десятичных частей, разбег, наименьшая дес. часть)
         let totalDecimalPlayer1 = 0;
         let totalDecimalPlayer2 = 0;
 
@@ -299,6 +328,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
+        // Обновление HTML для resultDiv (остается таким же)
         let overallWinnerDecimalSumMessage;
         let decimalSumVerdictMessage;
         let advantageDecimal = Math.abs(totalDecimalPlayer1 - totalDecimalPlayer2);
@@ -462,9 +492,9 @@ document.addEventListener('DOMContentLoaded', function() {
     function getAiPrediction() {
         const data = calculateWinner(); // Получаем все рассчитанные данные
 
-        // Если есть ошибки валидации, не делаем прогноз
-        if (errorDiv.classList.contains('visible')) {
-            return { winner: null, reason: 'Некорректные или недостаточные данные для прогноза.' };
+        // Если calculateWinner вернул null (из-за ошибок), то не делаем прогноз
+        if (!data) {
+            return { winner: 'Н/Д', reason: 'Некорректные или недостаточные данные для прогноза.' };
         }
 
         let player1Score = 0;
@@ -553,9 +583,11 @@ document.addEventListener('DOMContentLoaded', function() {
         predictedReason.textContent = prediction.reason;
 
         // Устанавливаем цвет цифры в зависимости от победителя
-        predictedWinnerNumber.classList.remove('player2'); // Сбрасываем предыдущий класс
+        predictedWinnerNumber.classList.remove('player2', 'text-warning-custom'); // Сбрасываем предыдущие классы
         if (prediction.winner === 2) {
             predictedWinnerNumber.classList.add('player2');
+        } else if (prediction.winner === 'Н/Д') {
+             predictedWinnerNumber.classList.add('text-warning-custom'); // Желтый для Н/Д
         }
 
         // Скрываем основной блок и показываем блок прогноза
