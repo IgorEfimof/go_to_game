@@ -1,14 +1,18 @@
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM Content Loaded. Initializing script.');
+    console.log('--- DOM Content Loaded. Starting Script Execution ---');
 
     const games = [5, 6, 7, 8, 9, 10];
     const fields = games.flatMap(g => [`g${g}P1`, `g${g}P2`]);
-    const inputElements = fields.map(id => document.getElementById(id)).filter(el => el !== null);
+    const inputElements = fields.map(id => {
+        const el = document.getElementById(id);
+        if (!el) console.error(`Element with ID '${id}' not found!`);
+        return el;
+    }).filter(el => el !== null);
 
     const mainContentBlock = document.getElementById('main-content-block');
     const resultDiv = document.getElementById('result');
     const errorDiv = document.getElementById('error');
-    const errorText = document.getElementById('error');
+    const errorText = document.getElementById('error'); // Правильно ссылается на errorDiv
 
     const keyboardContainer = document.getElementById('custom-keyboard-container');
     const keyboard = document.getElementById('custom-keyboard');
@@ -20,34 +24,87 @@ document.addEventListener('DOMContentLoaded', function() {
     const predictedReason = document.getElementById('predicted-reason');
     const newCalculationBtn = document.getElementById('newCalculationBtn');
 
+    // --- INITIAL VISIBILITY SETUP ---
+    // Убедимся, что основной блок виден при загрузке, а AI-блок скрыт
+    if (mainContentBlock) {
+        mainContentBlock.style.display = 'block'; // Или 'flex' если он flex-контейнер
+        mainContentBlock.classList.remove('hidden');
+        mainContentBlock.classList.add('visible'); // Убедимся, что visible класс есть
+        console.log('mainContentBlock set to visible on load.');
+    } else {
+        console.error('mainContentBlock not found!');
+    }
+
+    if (aiPredictionBlock) {
+        aiPredictionBlock.style.display = 'none'; // Полностью скрыт по умолчанию
+        aiPredictionBlock.classList.remove('visible');
+        aiPredictionBlock.classList.add('hidden'); // Убедимся, что hidden класс есть
+        console.log('aiPredictionBlock set to hidden on load.');
+    } else {
+        console.error('aiPredictionBlock not found!');
+    }
+
+    if (resultDiv) {
+        resultDiv.classList.remove('visible'); // Скрываем результаты при старте
+        console.log('resultDiv hidden on load.');
+    } else {
+        console.error('resultDiv not found!');
+    }
+
+    if (errorDiv) {
+        errorDiv.classList.remove('visible'); // Скрываем ошибки при старте
+        console.log('errorDiv hidden on load.');
+    } else {
+        console.error('errorDiv not found!');
+    }
+
     // --- Keyboard Logic ---
     function showKeyboard(input) {
         console.log('showKeyboard called for input:', input.id);
         if (activeInput === input && keyboardContainer.classList.contains('show')) {
+            console.log('Keyboard already visible for this input. Skipping.');
             return;
         }
 
         activeInput = input;
-        input.setSelectionRange(input.value.length, input.value.length);
+        if (input) {
+            input.setSelectionRange(input.value.length, input.value.length);
+        }
         
-        // Убедимся, что основной блок виден
-        mainContentBlock.classList.remove('hidden');
-        mainContentBlock.classList.add('visible');
-        
-        // Скрываем AI-блок при показе клавиатуры/формы
-        aiPredictionBlock.classList.remove('visible');
-        aiPredictionBlock.style.display = 'none';
+        // Убедимся, что основной блок виден и блок прогноза скрыт
+        if (mainContentBlock) {
+            mainContentBlock.style.display = 'block'; // или 'flex'
+            mainContentBlock.classList.remove('hidden');
+            mainContentBlock.classList.add('visible');
+            console.log('showKeyboard: mainContentBlock set to visible.');
+        }
 
-        // Скрываем обычные результаты и ошибки, чтобы они не мешали вводу
-        resultDiv.classList.remove('visible');
-        errorDiv.classList.remove('visible');
-        errorText.textContent = ''; // Очищаем текст ошибки
+        if (aiPredictionBlock) {
+            aiPredictionBlock.classList.remove('visible');
+            aiPredictionBlock.classList.add('hidden');
+            aiPredictionBlock.style.display = 'none';
+            console.log('showKeyboard: aiPredictionBlock set to hidden.');
+        }
 
-        // Показываем клавиатуру
-        keyboardContainer.style.display = 'flex';
-        setTimeout(() => {
-            keyboardContainer.classList.add('show');
-        }, 50);
+        if (resultDiv) {
+            resultDiv.classList.remove('visible');
+            console.log('showKeyboard: resultDiv hidden.');
+        }
+        if (errorDiv) {
+            errorDiv.classList.remove('visible');
+            errorText.textContent = '';
+            console.log('showKeyboard: errorDiv hidden.');
+        }
+
+        if (keyboardContainer) {
+            keyboardContainer.style.display = 'flex';
+            setTimeout(() => {
+                keyboardContainer.classList.add('show');
+                console.log('showKeyboard: Keyboard container shown.');
+            }, 50);
+        } else {
+            console.error('keyboardContainer not found!');
+        }
     }
 
     function hideKeyboardAndProcessData() {
@@ -56,38 +113,52 @@ document.addEventListener('DOMContentLoaded', function() {
         if (activeInput) {
             activeInput.blur(); 
             activeInput = null;
+            console.log('hideKeyboardAndProcessData: Active input blurred.');
         }
 
-        keyboardContainer.classList.remove('show');
-        keyboardContainer.addEventListener('transitionend', function handler() {
-            keyboardContainer.style.display = 'none';
-            keyboardContainer.removeEventListener('transitionend', handler);
-            
-            // После скрытия клавиатуры, сначала вызываем calculateWinner
-            const calculationData = calculateWinner(true); // Передаем true, чтобы показать resultDiv
-            
-            // Если расчеты прошли успешно (или есть что показать)
-            if (calculationData) {
-                // Затем показываем AI-прогноз
-                displayAiPrediction(calculationData);
-            } else {
-                // Если calculateWinner() не смог получить данные (например, из-за невалидных данных),
-                // то оставляем основной блок как есть, возможно, с сообщением об ошибке.
-                // В этом случае AI-прогноз не будет показан.
-                console.log('Calculation data not available, AI prediction skipped.');
-            }
+        if (keyboardContainer) {
+            keyboardContainer.classList.remove('show');
+            keyboardContainer.addEventListener('transitionend', function handler() {
+                keyboardContainer.style.display = 'none';
+                keyboardContainer.removeEventListener('transitionend', handler);
+                console.log('hideKeyboardAndProcessData: Keyboard container fully hidden after transition.');
+                
+                // После скрытия клавиатуры, сначала вызываем calculateWinner
+                const calculationData = calculateWinner(true); // Передаем true, чтобы показать resultDiv
+                console.log('hideKeyboardAndProcessData: calculateWinner called, data:', calculationData);
+                
+                // Если расчеты прошли успешно (или есть что показать)
+                if (calculationData) {
+                    // Задержка перед показом AI-блока, чтобы resultDiv успел отобразиться
+                    setTimeout(() => {
+                         displayAiPrediction(calculationData);
+                         console.log('hideKeyboardAndProcessData: displayAiPrediction called.');
+                    }, 300); // Небольшая задержка
+                } else {
+                    console.log('Calculation data not available (null), AI prediction skipped.');
+                }
 
-        }, { once: true });
+            }, { once: true });
+        } else {
+            console.error('keyboardContainer not found for hideKeyboardAndProcessData!');
+            // Если клавиатура не найдена, все равно пытаемся выполнить расчет
+            const calculationData = calculateWinner(true);
+            if (calculationData) {
+                displayAiPrediction(calculationData);
+            }
+        }
     }
 
     // Обработчики событий для полей ввода
     inputElements.forEach((input) => {
         if (input) {
             input.addEventListener('focus', function(e) {
+                console.log(`Input ${this.id} focused.`);
                 showKeyboard(this);
             });
 
             input.addEventListener('touchstart', function(e) {
+                console.log(`Input ${this.id} touchstarted.`);
                 e.preventDefault();
                 if (document.activeElement !== this) {
                     this.focus();
@@ -95,6 +166,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }, { passive: false });
 
             input.addEventListener('input', function(e) {
+                console.log(`Input ${this.id} value changed to: ${this.value}`);
                 let val = this.value.replace(/[^\d.]/g, '');
                 const parts = val.split('.');
                 if (parts.length > 2) {
@@ -111,16 +183,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 this.value = val;
 
-                // Автоматический переход или завершение
                 if (this.value.length === this.maxLength && !this.value.endsWith('.')) {
                     const currentIndex = inputElements.indexOf(this);
                     if (currentIndex !== -1 && currentIndex < inputElements.length - 1) {
+                        console.log(`Auto-advancing from ${this.id} to ${inputElements[currentIndex + 1].id}`);
                         setTimeout(() => {
                             inputElements[currentIndex + 1].focus();
                         }, 50);
                     } else if (currentIndex === inputElements.length - 1) {
-                        // Если это последнее поле и оно заполнено, скрываем клавиатуру
-                        // и инициируем процесс отображения прогноза
+                        console.log(`Last input ${this.id} filled. Hiding keyboard and processing data.`);
                         hideKeyboardAndProcessData();
                     }
                 }
@@ -129,84 +200,109 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Обработчик кликов по кнопкам клавиатуры
-    keyboard.addEventListener('click', function(e) {
-        e.preventDefault();
-        const button = e.target.closest('button');
-        if (!button) return;
+    if (keyboard) {
+        keyboard.addEventListener('click', function(e) {
+            e.preventDefault();
+            const button = e.target.closest('button');
+            if (!button) return;
 
-        if (!activeInput) {
-            const firstEmptyInput = inputElements.find(input => input.value === '');
-            if (firstEmptyInput) {
-                showKeyboard(firstEmptyInput);
-            } else {
-                return; 
-            }
-        }
-
-        const key = button.dataset.key;
-        let currentValue = activeInput.value;
-
-        if (key === 'delete') {
-            activeInput.value = currentValue.slice(0, -1);
-        } else if (key === '.') {
-            if (!currentValue.includes('.')) {
-                if (currentValue === '') {
-                    activeInput.value = '1.';
+            if (!activeInput) {
+                console.warn('No active input during keyboard click.');
+                const firstEmptyInput = inputElements.find(input => input.value === '');
+                if (firstEmptyInput) {
+                    showKeyboard(firstEmptyInput);
+                    console.log('Attempting to focus on first empty input:', firstEmptyInput.id);
                 } else {
-                    activeInput.value += '.';
+                    console.log('No empty inputs found. Keyboard click ignored.');
+                    return; 
                 }
             }
-        } else if (currentValue.length < activeInput.maxLength) {
-            if (currentValue === '1.' && key === '0' && activeInput.maxLength === 4) {
-                 activeInput.value = '1.0';
-            } else if (currentValue.length === 1 && !currentValue.includes('.') && activeInput.maxLength === 4) {
-                // Если введено 1 цифра (например, '1') и нет точки, и макс длина 4 (т.е. 1.00), то вставляем '1.' + новую цифру
-                activeInput.value = currentValue + '.' + key;
-            } else {
-                activeInput.value += key;
-            }
-        }
 
-        const event = new Event('input', { bubbles: true });
-        activeInput.dispatchEvent(event);
-    });
+            const key = button.dataset.key;
+            console.log('Keyboard button pressed:', key, 'for active input:', activeInput ? activeInput.id : 'N/A');
+            let currentValue = activeInput.value;
+
+            if (key === 'delete') {
+                activeInput.value = currentValue.slice(0, -1);
+            } else if (key === '.') {
+                if (!currentValue.includes('.')) {
+                    if (currentValue === '') {
+                        activeInput.value = '1.';
+                    } else {
+                        activeInput.value += '.';
+                    }
+                }
+            } else if (currentValue.length < activeInput.maxLength) {
+                if (currentValue === '1.' && key === '0' && activeInput.maxLength === 4) {
+                     activeInput.value = '1.0';
+                } else if (currentValue.length === 1 && !currentValue.includes('.') && activeInput.maxLength === 4) {
+                    activeInput.value = currentValue + '.' + key;
+                } else {
+                    activeInput.value += key;
+                }
+            }
+
+            const event = new Event('input', { bubbles: true });
+            activeInput.dispatchEvent(event);
+            console.log('Input event dispatched for:', activeInput.id);
+        });
+    } else {
+        console.error('Keyboard element not found!');
+    }
 
     // --- Функция очистки данных (с возвратом к форме ввода) ---
     function clearAllData() {
         console.log('Clearing all data...');
         inputElements.forEach(input => {
-            input.value = '';
-            input.classList.remove('is-invalid');
+            if (input) {
+                input.value = '';
+                input.classList.remove('is-invalid');
+            }
         });
 
-        resultDiv.classList.remove('visible');
-        errorDiv.classList.remove('visible');
-        errorText.textContent = '';
+        if (resultDiv) resultDiv.classList.remove('visible');
+        if (errorDiv) {
+            errorDiv.classList.remove('visible');
+            errorText.textContent = '';
+        }
 
         // Показываем основной блок и скрываем AI-прогноз
-        aiPredictionBlock.classList.remove('visible');
-        aiPredictionBlock.style.display = 'none';
+        if (aiPredictionBlock) {
+            aiPredictionBlock.classList.remove('visible');
+            aiPredictionBlock.classList.add('hidden');
+            aiPredictionBlock.style.display = 'none';
+        }
 
-        mainContentBlock.classList.remove('hidden');
-        mainContentBlock.classList.add('visible');
+        if (mainContentBlock) {
+            mainContentBlock.classList.remove('hidden');
+            mainContentBlock.classList.add('visible');
+            mainContentBlock.style.display = 'block'; // или 'flex'
+        }
         
         if (inputElements.length > 0) {
             inputElements[0].focus();
             showKeyboard(inputElements[0]);
+            console.log('clearAllData: Focused on first input and showing keyboard.');
+        } else {
+            console.warn('No input elements found to focus on after clearAllData.');
         }
-        // Не вызываем calculateWinner() здесь, так как поля пустые
     }
 
     if (clearDataBtn) {
         clearDataBtn.addEventListener('click', clearAllData);
+        console.log('clearDataBtn event listener attached.');
+    } else {
+        console.error('clearDataBtn not found!');
     }
 
     if (newCalculationBtn) {
         newCalculationBtn.addEventListener('click', clearAllData);
+        console.log('newCalculationBtn event listener attached.');
+    } else {
+        console.error('newCalculationBtn not found!');
     }
 
     // --- Main Calculation Function ---
-    // Добавлен параметр `forceShowResultDiv`
     function calculateWinner(forceShowResultDiv = false) {
         console.log('calculateWinner called with forceShowResultDiv:', forceShowResultDiv);
         let player1Coeffs = [];
@@ -229,6 +325,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (p1Input.value.length > 0 && !isP1Valid) {
                     p1Input.classList.add('is-invalid');
                     allCoeffsValid = false;
+                    console.warn(`Validation failed for ${p1Input.id}: ${p1Input.value}`);
                 } else {
                     p1Input.classList.remove('is-invalid');
                 }
@@ -236,6 +333,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (p2Input.value.length > 0 && !isP2Valid) {
                     p2Input.classList.add('is-invalid');
                     allCoeffsValid = false;
+                    console.warn(`Validation failed for ${p2Input.id}: ${p2Input.value}`);
                 } else {
                     p2Input.classList.remove('is-invalid');
                 }
@@ -246,44 +344,55 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (p1Input.value.length > 0 || p2Input.value.length > 0) {
                     lastFilledGameIndex = i;
                 }
+            } else {
+                console.warn(`Input elements g${gameNumber}P1 or g${gameNumber}P2 not found in calculateWinner.`);
             }
         }
 
         const hasMinimumInput = (inputElements[0] && inputElements[0].value.length > 0 && !isNaN(parseFloat(inputElements[0].value))) && 
                                 (inputElements[1] && inputElements[1].value.length > 0 && !isNaN(parseFloat(inputElements[1].value)));
+        
+        console.log(`Validation result: allCoeffsValid=${allCoeffsValid}, hasMinimumInput=${hasMinimumInput}`);
 
         if (!allCoeffsValid || !hasMinimumInput) {
-            errorText.textContent = 'Проверьте формат коэффициентов (например, 1.85). Значения должны быть от 1.00 до 10.00. Необходимо заполнить минимум гейм 5.';
-            errorDiv.classList.add('visible');
-            resultDiv.classList.remove('visible');
-            // В случае ошибки возвращаем объект с минимальными данными, чтобы AI мог сказать "Н/Д"
+            if (errorText && errorDiv && resultDiv) {
+                errorText.textContent = 'Проверьте формат коэффициентов (например, 1.85). Значения должны быть от 1.00 до 10.00. Необходимо заполнить минимум гейм 5.';
+                errorDiv.classList.add('visible');
+                resultDiv.classList.remove('visible');
+                console.log('calculateWinner: Validation failed, error message displayed.');
+            }
             return {
                 player1Coeffs: [], player2Coeffs: [], totalDecimalPlayer1: 0, totalDecimalPlayer2: 0,
                 totalDecreaseSpreadP1: 0, totalIncreaseSpreadP1: 0, totalDecreaseSpreadP2: 0, totalIncreaseSpreadP2: 0,
                 p1ConfidencePercent: 0, p2ConfidencePercent: 0, player1SmallestDecimalWins: 0, player2SmallestDecimalWins: 0,
                 filledGamesCount: 0, lastFilledGameIndex: -1,
-                hasError: true // Добавляем флаг ошибки
+                hasError: true
             };
         }
 
-        errorText.textContent = '';
-        errorDiv.classList.remove('visible');
-
-        // Показываем resultDiv, если forceShowResultDiv = true
-        if (forceShowResultDiv) {
-            resultDiv.classList.add('visible');
-        } else {
-            resultDiv.classList.remove('visible');
+        if (errorText && errorDiv) {
+            errorText.textContent = '';
+            errorDiv.classList.remove('visible');
+            console.log('calculateWinner: No validation errors, error message hidden.');
         }
 
+        if (resultDiv) {
+            if (forceShowResultDiv) {
+                resultDiv.classList.add('visible');
+                console.log('calculateWinner: resultDiv forced to be visible.');
+            } else {
+                resultDiv.classList.remove('visible');
+                console.log('calculateWinner: resultDiv hidden (not forced).');
+            }
+        }
+
+        // --- Расчеты (без изменений) ---
         let totalDecimalPlayer1 = 0;
         let totalDecimalPlayer2 = 0;
-
         let totalDecreaseSpreadP1 = 0;
         let totalIncreaseSpreadP1 = 0;
         let totalDecreaseSpreadP2 = 0;
         let totalIncreaseSpreadP2 = 0;
-
         let filledGamesCount = 0;
 
         for (let i = 0; i <= lastFilledGameIndex; i++) {
@@ -301,32 +410,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     if (!isNaN(p1Previous) && !isNaN(p1Current)) {
                         const spreadP1 = p1Previous - p1Current;
-                        if (spreadP1 > 0) {
-                            totalDecreaseSpreadP1 += spreadP1;
-                        } else if (spreadP1 < 0) {
-                            totalIncreaseSpreadP1 += Math.abs(spreadP1);
-                        }
+                        if (spreadP1 > 0) { totalDecreaseSpreadP1 += spreadP1; }
+                        else if (spreadP1 < 0) { totalIncreaseSpreadP1 += Math.abs(spreadP1); }
                     }
-
                     if (!isNaN(p2Previous) && !isNaN(p2Current)) {
                         const spreadP2 = p2Previous - p2Current;
-                        if (spreadP2 > 0) {
-                            totalDecreaseSpreadP2 += spreadP2;
-                        } else if (spreadP2 < 0) {
-                            totalIncreaseSpreadP2 += Math.abs(spreadP2);
-                        }
+                        if (spreadP2 > 0) { totalDecreaseSpreadP2 += spreadP2; }
+                        else if (spreadP2 < 0) { totalIncreaseSpreadP2 += Math.abs(spreadP2); }
                     }
                 }
             }
         }
-
+        
         let overallWinnerDecimalSumMessage;
         let decimalSumVerdictMessage;
         let advantageDecimal = Math.abs(totalDecimalPlayer1 - totalDecimalPlayer2);
 
-        document.getElementById('player1_sum').textContent = `Сумма дес. частей (И1): ${totalDecimalPlayer1.toFixed(4)}`;
-        document.getElementById('player2_sum').textContent = `Сумма дес. частей (И2): ${totalDecimalPlayer2.toFixed(4)}`;
-
+        if (document.getElementById('player1_sum')) document.getElementById('player1_sum').textContent = `Сумма дес. частей (И1): ${totalDecimalPlayer1.toFixed(4)}`;
+        if (document.getElementById('player2_sum')) document.getElementById('player2_sum').textContent = `Сумма дес. частей (И2): ${totalDecimalPlayer2.toFixed(4)}`;
+        
         if (totalDecimalPlayer1 < totalDecimalPlayer2) {
             overallWinnerDecimalSumMessage = `<span class="text-success-custom">Победитель: **Игрок 1**</span>`;
             decimalSumVerdictMessage = `Преимущество Игрока 1 по дес. частям: ${advantageDecimal.toFixed(4)}`;
@@ -337,55 +439,37 @@ document.addEventListener('DOMContentLoaded', function() {
             overallWinnerDecimalSumMessage = `<span class="text-info-custom">Вероятно трость</span>`;
             decimalSumVerdictMessage = "Разница десятичных частей = 0";
         }
-        document.getElementById('overall_winner_decimal_sum').innerHTML = overallWinnerDecimalSumMessage;
-        document.getElementById('decimal_sum_verdict').innerHTML = decimalSumVerdictMessage;
+        if (document.getElementById('overall_winner_decimal_sum')) document.getElementById('overall_winner_decimal_sum').innerHTML = overallWinnerDecimalSumMessage;
+        if (document.getElementById('decimal_sum_verdict')) document.getElementById('decimal_sum_verdict').innerHTML = decimalSumVerdictMessage;
 
         let p1Uncertainty = 0;
         let p1ConfidencePercent = 0;
-        if ((totalDecreaseSpreadP1 + totalIncreaseSpreadP1) > 0) {
-             p1Uncertainty = (totalIncreaseSpreadP1 / (totalDecreaseSpreadP1 + totalIncreaseSpreadP1)) * 100;
-             p1ConfidencePercent = 100 - p1Uncertainty;
-        }
+        if ((totalDecreaseSpreadP1 + totalIncreaseSpreadP1) > 0) { p1Uncertainty = (totalIncreaseSpreadP1 / (totalDecreaseSpreadP1 + totalIncreaseSpreadP1)) * 100; p1ConfidencePercent = 100 - p1Uncertainty; }
         let p1SpreadDetails = `Игрок 1: Снижение Кф. <span class="text-success-custom">↓${totalDecreaseSpreadP1.toFixed(4)}</span> | Увеличение Кф. <span class="text-danger-custom">↑${totalIncreaseSpreadP1.toFixed(4)}</span> | Уверенность: **${p1ConfidencePercent.toFixed(2)}%**`;
 
         let p2Uncertainty = 0;
         let p2ConfidencePercent = 0;
-        if ((totalDecreaseSpreadP2 + totalIncreaseSpreadP2) > 0) {
-            p2Uncertainty = (totalIncreaseSpreadP2 / (totalDecreaseSpreadP2 + totalIncreaseSpreadP2)) * 100;
-            p2ConfidencePercent = 100 - p2Uncertainty;
-        }
+        if ((totalDecreaseSpreadP2 + totalIncreaseSpreadP2) > 0) { p2Uncertainty = (totalIncreaseSpreadP2 / (totalDecreaseSpreadP2 + totalIncreaseSpreadP2)) * 100; p2ConfidencePercent = 100 - p2Uncertainty; }
         let p2SpreadDetails = `Игрок 2: Снижение Кф. <span class="text-success-custom">↓${totalDecreaseSpreadP2.toFixed(4)}</span> | Увеличение Кф. <span class="text-danger-custom">↑${totalIncreaseSpreadP2.toFixed(4)}</span> | Уверенность: **${p2ConfidencePercent.toFixed(2)}%**`;
 
         let spreadVerdictMessage = "Вердикт по разбегу: ";
-
         let p1HasHigherChances = p1ConfidencePercent >= 75 && totalDecreaseSpreadP1 > totalIncreaseSpreadP1;
         let p2HasHigherChances = p2ConfidencePercent >= 75 && totalDecreaseSpreadP2 > totalIncreaseSpreadP2;
 
-        if (filledGamesCount < 2) {
-            spreadVerdictMessage += `<span class="text-warning-custom">Недостаточно данных (требуется мин. 2 гейма)</span>`;
-        } else if (p1HasHigherChances && !p2HasHigherChances) {
-            spreadVerdictMessage += `<span class="text-success-custom">**Игрок 1** имеет выше шансы.</span>`;
-        } else if (!p1HasHigherChances && p2HasHigherChances) {
-            spreadVerdictMessage += `<span class="text-success-custom">**Игрок 2** имеет выше шансы.</span>`;
-        } else if (p1HasHigherChances && p2HasHigherChances) {
-            if (p1ConfidencePercent > p2ConfidencePercent) {
-                spreadVerdictMessage += `<span class="text-info-custom">Оба игрока сильны, но у **Игрока 1** более выражена уверенность.</span>`;
-            } else if (p2ConfidencePercent > p1ConfidencePercent) {
-                spreadVerdictMessage += `<span class="text-info-custom">Оба игрока сильны, но у **Игрока 2** более выражена уверенность.</span>`;
-            } else {
-                spreadVerdictMessage += `<span class="text-info-custom">Оба игрока **сильны** (одинаковая уверенность).</span>`;
-            }
+        if (filledGamesCount < 2) { spreadVerdictMessage += `<span class="text-warning-custom">Недостаточно данных (требуется мин. 2 гейма)</span>`; }
+        else if (p1HasHigherChances && !p2HasHigherChances) { spreadVerdictMessage += `<span class="text-success-custom">**Игрок 1** имеет выше шансы.</span>`; }
+        else if (!p1HasHigherChances && p2HasHigherChances) { spreadVerdictMessage += `<span class="text-success-custom">**Игрок 2** имеет выше шансы.</span>`; }
+        else if (p1HasHigherChances && p2HasHigherChances) {
+            if (p1ConfidencePercent > p2ConfidencePercent) { spreadVerdictMessage += `<span class="text-info-custom">Оба игрока сильны, но у **Игрока 1** более выражена уверенность.</span>`; }
+            else if (p2ConfidencePercent > p1ConfidencePercent) { spreadVerdictMessage += `<span class="text-info-custom">Оба игрока сильны, но у **Игрока 2** более выражена уверенность.</span>`; }
+            else { spreadVerdictMessage += `<span class="text-info-custom">Оба игрока **сильны** (одинаковая уверенность).</span>`; }
         } else {
-            if (totalIncreaseSpreadP1 > 0 || totalIncreaseSpreadP2 > 0) {
-                spreadVerdictMessage += `<span class="text-danger-custom">Неопределённо (преобладание повышения Кф. или нейтрально).</span>`;
-            } else {
-                spreadVerdictMessage += `<span class="text-warning-custom">Неопределённо (нет значимых движений Кф.).</span>`;
-            }
+            if (totalIncreaseSpreadP1 > 0 || totalIncreaseSpreadP2 > 0) { spreadVerdictMessage += `<span class="text-danger-custom">Неопределённо (преобладание повышения Кф. или нейтрально).</span>`; }
+            else { spreadVerdictMessage += `<span class="text-warning-custom">Неопределённо (нет значимых движений Кф.).</span>`; }
         }
-
-        document.getElementById('p1_spread_summary').innerHTML = p1SpreadDetails;
-        document.getElementById('p2_spread_summary').innerHTML = p2SpreadDetails;
-        document.getElementById('overall_winner_spread_analysis').innerHTML = spreadVerdictMessage;
+        if (document.getElementById('p1_spread_summary')) document.getElementById('p1_spread_summary').innerHTML = p1SpreadDetails;
+        if (document.getElementById('p2_spread_summary')) document.getElementById('p2_spread_summary').innerHTML = p2SpreadDetails;
+        if (document.getElementById('overall_winner_spread_analysis')) document.getElementById('overall_winner_spread_analysis').innerHTML = spreadVerdictMessage;
 
         let lastGameSpreadDynamicMessage = '';
         if (lastFilledGameIndex > 0) {
@@ -398,15 +482,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 const spreadP1Last = p1Prev - p1Last;
                 const spreadP2Last = p2Prev - p2Last;
 
-                let p1ChangeText = '';
-                let p2ChangeText = '';
-                let p1Class = '';
-                let p2Class = '';
-
+                let p1ChangeText = ''; let p2ChangeText = ''; let p1Class = ''; let p2Class = '';
                 if (spreadP1Last > 0) { p1ChangeText = `снизился на ${spreadP1Last.toFixed(2)}`; p1Class = 'text-success-custom'; }
                 else if (spreadP1Last < 0) { p1ChangeText = `вырос на ${Math.abs(spreadP1Last).toFixed(2)}`; p1Class = 'text-danger-custom'; }
                 else { p1ChangeText = `не изменился`; p1Class = 'text-info-custom'; }
-
                 if (spreadP2Last > 0) { p2ChangeText = `снизился на ${spreadP2Last.toFixed(2)}`; p2Class = 'text-success-custom'; }
                 else if (spreadP2Last < 0) { p2ChangeText = `вырос на ${Math.abs(spreadP2Last).toFixed(2)}`; p2Class = 'text-danger-custom'; }
                 else { p2ChangeText = `не изменился`; p2Class = 'text-info-custom'; }
@@ -416,7 +495,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 lastGameSpreadDynamicMessage += `И2: <span class="${p2Class}">Кф. ${p2ChangeText}.</span>`;
             }
         }
-        document.getElementById('last_game_spread_dynamic').innerHTML = lastGameSpreadDynamicMessage;
+        if (document.getElementById('last_game_spread_dynamic')) document.getElementById('last_game_spread_dynamic').innerHTML = lastGameSpreadDynamicMessage;
 
 
         let player1SmallestDecimalWins = 0;
@@ -431,11 +510,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const decimalP1 = Math.round((p1Current % 1) * 100);
                 const decimalP2 = Math.round((p2Current % 1) * 100);
 
-                if (decimalP1 < decimalP2) {
-                    player1SmallestDecimalWins++;
-                } else if (decimalP2 < decimalP1) {
-                    player2SmallestDecimalWins++;
-                }
+                if (decimalP1 < decimalP2) { player1SmallestDecimalWins++; }
+                else if (decimalP2 < decimalP1) { player2SmallestDecimalWins++; }
                 comparisonCount++;
             }
         }
@@ -443,35 +519,28 @@ document.addEventListener('DOMContentLoaded', function() {
         let smallestDecimalWinnerMessage = "Вероятный победитель (меньшая дес. часть): ";
         let smallestDecimalWinnerClass = 'text-info-custom';
 
-        if (comparisonCount === 0) {
-            smallestDecimalWinnerMessage += `<span class="text-warning-custom">Недостаточно данных (нет пар Кф. для сравнения)</span>`;
-            smallestDecimalWinnerClass = 'text-warning-custom';
-        } else if (player1SmallestDecimalWins > player2SmallestDecimalWins) {
-            smallestDecimalWinnerMessage += `<span class="text-success-custom">**Игрок 1** (${player1SmallestDecimalWins} против ${player2SmallestDecimalWins})</span>`;
-            smallestDecimalWinnerClass = 'text-success-custom';
-        } else if (player2SmallestDecimalWins > player1SmallestDecimalWins) {
-            smallestDecimalWinnerMessage += `<span class="text-success-custom">**Игрок 2** (${player2SmallestDecimalWins} против ${player1SmallestDecimalWins})</span>`;
-            smallestDecimalWinnerClass = 'text-success-custom';
-        } else {
-            smallestDecimalWinnerMessage += `<span class="text-info-custom">Ничья (равное количество меньших дес. частей)</span>`;
-            smallestDecimalWinnerClass = 'text-info-custom';
+        if (comparisonCount === 0) { smallestDecimalWinnerMessage += `<span class="text-warning-custom">Недостаточно данных (нет пар Кф. для сравнения)</span>`; smallestDecimalWinnerClass = 'text-warning-custom'; }
+        else if (player1SmallestDecimalWins > player2SmallestDecimalWins) { smallestDecimalWinnerMessage += `<span class="text-success-custom">**Игрок 1** (${player1SmallestDecimalWins} против ${player2SmallestDecimalWins})</span>`; smallestDecimalWinnerClass = 'text-success-custom'; }
+        else if (player2SmallestDecimalWins > player1SmallestDecimalWins) { smallestDecimalWinnerMessage += `<span class="text-success-custom">**Игрок 2** (${player2SmallestDecimalWins} против ${player1SmallestDecimalWins})</span>`; smallestDecimalWinnerClass = 'text-success-custom'; }
+        else { smallestDecimalWinnerMessage += `<span class="text-info-custom">Ничья (равное количество меньших дес. частей)</span>`; smallestDecimalWinnerClass = 'text-info-custom'; }
+
+        if (document.getElementById('overall_winner_smallest_decimal')) {
+            document.getElementById('overall_winner_smallest_decimal').innerHTML = smallestDecimalWinnerMessage;
+            document.getElementById('overall_winner_smallest_decimal').className = `text-center ${smallestDecimalWinnerClass}`;
         }
 
-        document.getElementById('overall_winner_smallest_decimal').innerHTML = smallestDecimalWinnerMessage;
-        document.getElementById('overall_winner_smallest_decimal').className = `text-center ${smallestDecimalWinnerClass}`;
 
         return {
             player1Coeffs, player2Coeffs, totalDecimalPlayer1, totalDecimalPlayer2,
             totalDecreaseSpreadP1, totalIncreaseSpreadP1, totalDecreaseSpreadP2, totalIncreaseSpreadP2,
             p1ConfidencePercent, p2ConfidencePercent, player1SmallestDecimalWins, player2SmallestDecimalWins,
-            filledGamesCount, lastFilledGameIndex, hasError: false
+            filledGamesCount, lastFilledGameIndex, hasError: false, comparisonCount // Добавил comparisonCount
         };
     }
 
     // --- AI Prediction Logic ---
-    // Теперь принимает calculationData напрямую
     function getAiPrediction(data) {
-        // Если calculateWinner() уже обнаружил ошибку, возвращаем соответствующий прогноз
+        console.log('getAiPrediction called with data:', data);
         if (data.hasError) {
             return { winner: 'Н/Д', reason: 'Некорректные или недостаточные данные для прогноза.' };
         }
@@ -489,7 +558,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (data.totalDecimalPlayer2 < data.totalDecimalPlayer1) {
             player2Score += 2;
             reason.push(`Игрок 2 лидирует по сумме десятичных частей (${data.totalDecimalPlayer2.toFixed(2)} vs ${data.totalDecimalPlayer1.toFixed(2)}).`);
-        } else if (data.totalDecimalPlayer1 > 0 || data.filledGamesCount > 0) { // Если были данные и равенство
+        } else if (data.totalDecimalPlayer1 > 0 || data.filledGamesCount > 0) {
             reason.push(`Равенство по сумме десятичных частей.`);
         }
 
@@ -554,41 +623,69 @@ document.addEventListener('DOMContentLoaded', function() {
         return { winner: finalWinner, reason: finalReason };
     }
 
-    // Теперь принимает calculationData как аргумент
     function displayAiPrediction(calculationData) {
-        const prediction = getAiPrediction(calculationData); // Передаем данные
+        console.log('displayAiPrediction called with calculationData:', calculationData);
+        const prediction = getAiPrediction(calculationData);
 
-        predictedWinnerNumber.textContent = prediction.winner;
-        predictedReason.textContent = prediction.reason;
+        if (predictedWinnerNumber) predictedWinnerNumber.textContent = prediction.winner;
+        if (predictedReason) predictedReason.textContent = prediction.reason;
 
-        predictedWinnerNumber.classList.remove('player2', 'text-warning-custom');
-        if (prediction.winner === 2) {
-            predictedWinnerNumber.classList.add('player2');
-        } else if (prediction.winner === 'Н/Д') {
-             predictedWinnerNumber.classList.add('text-warning-custom');
+        if (predictedWinnerNumber) {
+            predictedWinnerNumber.classList.remove('player2', 'text-warning-custom');
+            if (prediction.winner === 2) {
+                predictedWinnerNumber.classList.add('player2');
+            } else if (prediction.winner === 'Н/Д') {
+                 predictedWinnerNumber.classList.add('text-warning-custom');
+            }
         }
 
-        // Скрываем основной блок
-        mainContentBlock.classList.remove('visible');
-        mainContentBlock.classList.add('hidden');
-        
-        // Ждем завершения анимации скрытия, прежде чем показать новый блок
-        mainContentBlock.addEventListener('transitionend', function handler() {
-            mainContentBlock.removeEventListener('transitionend', handler);
-            aiPredictionBlock.style.display = 'flex';
-            setTimeout(() => {
+        // Скрываем основной блок и показываем блок прогноза
+        if (mainContentBlock) {
+            mainContentBlock.classList.remove('visible');
+            mainContentBlock.classList.add('hidden');
+            // Переключение display только после transitionend, чтобы анимация сработала
+            // mainContentBlock.style.display = 'none'; // Удалено отсюда, чтобы анимация успела отработать
+            console.log('displayAiPrediction: mainContentBlock set to hidden class.');
+            
+            mainContentBlock.addEventListener('transitionend', function handler() {
+                mainContentBlock.removeEventListener('transitionend', handler);
+                mainContentBlock.style.display = 'none'; // Теперь можно полностью скрыть
+                console.log('displayAiPrediction: mainContentBlock display: none after transition.');
+
+                if (aiPredictionBlock) {
+                    aiPredictionBlock.style.display = 'flex'; // Показываем как flex-контейнер
+                    setTimeout(() => {
+                        aiPredictionBlock.classList.remove('hidden');
+                        aiPredictionBlock.classList.add('visible'); // Запускаем анимацию показа
+                        console.log('displayAiPrediction: aiPredictionBlock set to visible.');
+                    }, 50); // Небольшая задержка для плавности
+                } else {
+                    console.error('aiPredictionBlock not found in displayAiPrediction!');
+                }
+            }, { once: true });
+        } else {
+            console.error('mainContentBlock not found in displayAiPrediction!');
+            // Если mainContentBlock не найден, пытаемся показать aiPredictionBlock напрямую
+            if (aiPredictionBlock) {
+                aiPredictionBlock.style.display = 'flex';
+                aiPredictionBlock.classList.remove('hidden');
                 aiPredictionBlock.classList.add('visible');
-            }, 50);
-        }, { once: true });
+            }
+        }
     }
 
-    // Инициализируем расчет при загрузке страницы, чтобы показать начальные сообщения
-    // Теперь передаем false, чтобы resultDiv не показывался сразу при загрузке
-    // Он будет показан только после завершения ввода или принудительно через hideKeyboardAndProcessData
+    // Инициализируем расчет при загрузке страницы, чтобы показать начальные сообщения (ошибки)
+    // Но не показываем resultDiv сразу, т.к. поля пустые.
     calculateWinner(false);
+    console.log('Initial calculateWinner called.');
 
     // Присваиваем фокус первому полю при загрузке
     if (inputElements.length > 0) {
         inputElements[0].focus();
+        console.log('Focused on first input element on load.');
+    } else {
+        console.warn('No input elements found on load to focus on.');
     }
+
+    console.log('--- Script Execution Finished Setup ---');
 });
