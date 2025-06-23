@@ -7,7 +7,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const resultDiv = document.getElementById('result');
     const errorDiv = document.getElementById('error');
-    const errorText = document.getElementById('error'); // Уже ссылается на errorDiv
+    const errorText = document.getElementById('error'); 
+    const overallPredictionElement = document.getElementById('overall-prediction'); // Новый элемент для общего прогноза
 
     const keyboardContainer = document.getElementById('custom-keyboard-container');
     const keyboard = document.getElementById('custom-keyboard');
@@ -29,11 +30,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         activeInput = input;
 
-        // Важно: отменяем стандартный blur и фокус для iOS, чтобы не вызывать нативную клавиатуру
-        // Вместо blur() и focus() с таймаутом, которые могут вызвать мерцание,
-        // мы просто показываем клавиатуру и устанавливаем селекцию.
-        // input.blur(); // Этот вызов может закрыть клавиатуру раньше, чем нужно
-        // input.focus(); // Может вызвать мерцание
         input.setSelectionRange(input.value.length, input.value.length); // Перемещаем курсор в конец
 
         keyboardContainer.style.display = 'flex'; // Показываем контейнер сразу
@@ -52,9 +48,8 @@ document.addEventListener('DOMContentLoaded', function() {
             keyboardContainer.style.display = 'none'; // Скрываем после анимации
             keyboardContainer.removeEventListener('transitionend', handler);
             activeInput = null; // Сбрасываем активный инпут
+            calculateWinner(); // Вызываем расчет после скрытия клавиатуры, чтобы обновить прогноз
         }, { once: true }); // Обработчик выполнится только один раз
-
-        calculateWinner(); // Вызываем расчет после скрытия клавиатуры
     }
 
     // Обработчики событий для полей ввода
@@ -62,12 +57,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (input) {
             input.addEventListener('focus', function(e) {
                 console.log('Input focused:', this.id);
-                // Проверяем, не вызван ли фокус программно из-за нажатия на клавиатуру
-                // (актуально, если бы у кнопок клавиатуры был focus(), но у нас нет)
                 showKeyboard(this);
             });
 
-            // Для мобильных устройств: предотвращаем появление нативной клавиатуры при тапе
             input.addEventListener('touchstart', function(e) {
                 console.log('Input touchstarted:', this.id);
                 e.preventDefault(); // Предотвращаем стандартное поведение (открытие нативной клавиатуры)
@@ -78,21 +70,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
             input.addEventListener('blur', function(e) {
                 console.log('Input blurred:', this.id, 'relatedTarget:', e.relatedTarget ? e.relatedTarget.tagName : 'none');
-                // Если blur происходит из-за потери фокуса вне полей/клавиатуры, скрываем
-                // Если связанный элемент (relatedTarget) не является частью клавиатуры
-                // Проверяем, является ли следующий фокус элементом вне клавиатуры
-                // (Исправлено) - Вместо setTimeout для nextFocusedElement, используем currentTarget и relatedTarget более надежно
-                if (e.relatedTarget === null || (!keyboardContainer.contains(e.relatedTarget) && !inputElements.some(el => el === e.relatedTarget))) {
-                    // Проверяем, если focus уходит на другой инпут или за пределы клавиатуры
-                    if (!inputElements.includes(e.relatedTarget)) { // Если relatedTarget не является другим полем ввода
-                         // hideKeyboard(); // Скрываем, если фокус ушел куда-то еще, кроме другого поля ввода
-                    }
+                // Если связанный элемент (relatedTarget) не является частью клавиатуры и не является другим полем ввода
+                if (e.relatedTarget === null || (!keyboardContainer.contains(e.relatedTarget) && !inputElements.includes(e.relatedTarget))) {
+                    hideKeyboard(); // Скрываем, если фокус ушел куда-то еще, кроме другого поля ввода или самой клавиатуры
                 }
             });
 
             input.addEventListener('input', function(e) {
                 console.log('Input value changed:', this.id, this.value);
                 let val = this.value.replace(/[^\d.]/g, ''); // Разрешаем точки
+                
                 // Логика форматирования для X.YY
                 const parts = val.split('.');
                 if (parts.length > 2) { // Если больше одной точки, оставляем только первую
@@ -119,6 +106,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         hideKeyboard();
                     }
                 }
+                // Обновляем прогноз при каждом вводе, чтобы он был реактивным
+                updateOverallPrediction(); 
             });
         }
     });
@@ -152,9 +141,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         } else if (currentValue.length < activeInput.maxLength) { // Числовые кнопки (0-9)
-             // Если текущее значение "1." и вводим "0", то "1.0"
+            // Если текущее значение "1." и вводим "0", то "1.0"
             if (currentValue === '1.' && key === '0' && activeInput.maxLength === 4) {
-                 activeInput.value = '1.0';
+                activeInput.value = '1.0';
             } else {
                 activeInput.value += key;
             }
@@ -187,6 +176,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Пересчитываем, чтобы обновить состояние после очистки (покажет начальное сообщение)
         calculateWinner();
+        updateOverallPrediction(); // Обновляем главный прогноз
     }
 
     // Обработчик события для кнопки "Очистить"
@@ -231,29 +221,33 @@ document.addEventListener('DOMContentLoaded', function() {
                 player1Coeffs.push(isP1Valid ? p1Val : NaN);
                 player2Coeffs.push(isP2Valid ? p2Val : NaN);
 
-                if (isP1Valid || isP2Valid) { // Если хотя бы одно поле заполнено в гейме
+                if (p1Input.value.length > 0 || p2Input.value.length > 0) { // Если хотя бы одно поле заполнено в гейме (даже невалидно)
                     lastFilledGameIndex = i;
                 }
             }
         }
 
         // Проверяем заполнение Гейма 5 как минимальное требование
-        const hasMinimumInput = !isNaN(player1Coeffs[0]) && !isNaN(player2Coeffs[0]);
+        const hasMinimumInput = (player1Coeffs[0] && !isNaN(player1Coeffs[0])) || (player2Coeffs[0] && !isNaN(player2Coeffs[0]));
 
         if (!allCoeffsValid) {
             errorText.textContent = 'Проверьте формат коэффициентов (например, 1.85). Значения должны быть от 1.00 до 10.00.';
             errorDiv.classList.add('visible');
             resultDiv.classList.remove('visible');
+            overallPredictionElement.textContent = ''; // Очищаем прогноз
+            overallPredictionElement.classList.remove('text-success-custom', 'text-info-custom', 'text-warning-custom');
             return;
         }
 
-        if (!hasMinimumInput) {
-            errorText.textContent = 'Для расчета необходимо заполнить коэффициенты для Гейма 5.';
+        if (lastFilledGameIndex === -1) { // Ничего не введено
+            errorText.textContent = 'Для расчета введите коэффициенты.';
             errorDiv.classList.add('visible');
             resultDiv.classList.remove('visible');
+            overallPredictionElement.textContent = ''; // Очищаем прогноз
+            overallPredictionElement.classList.remove('text-success-custom', 'text-info-custom', 'text-warning-custom');
             return;
         }
-
+        
         errorText.textContent = '';
         errorDiv.classList.remove('visible');
 
@@ -331,8 +325,8 @@ document.addEventListener('DOMContentLoaded', function() {
         let p1Uncertainty = 0;
         let p1ConfidencePercent = 0;
         if ((totalDecreaseSpreadP1 + totalIncreaseSpreadP1) > 0) {
-             p1Uncertainty = (totalIncreaseSpreadP1 / (totalDecreaseSpreadP1 + totalIncreaseSpreadP1)) * 100;
-             p1ConfidencePercent = 100 - p1Uncertainty;
+            p1Uncertainty = (totalIncreaseSpreadP1 / (totalDecreaseSpreadP1 + totalIncreaseSpreadP1)) * 100;
+            p1ConfidencePercent = 100 - p1Uncertainty;
         }
         let p1SpreadDetails = `Игрок 1: Снижение Кф. <span class="text-success-custom">↓${totalDecreaseSpreadP1.toFixed(4)}</span> | Увеличение Кф. <span class="text-danger-custom">↑${totalIncreaseSpreadP1.toFixed(4)}</span> | Уверенность: **${p1ConfidencePercent.toFixed(2)}%**`;
 
@@ -348,8 +342,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let p1HasHigherChances = p1ConfidencePercent >= 75 && totalDecreaseSpreadP1 > totalIncreaseSpreadP1;
         let p2HasHigherChances = p2ConfidencePercent >= 75 && totalDecreaseSpreadP2 > totalIncreaseSpreadP2;
-
-        const anySpreadMovement = (totalDecreaseSpreadP1 + totalIncreaseSpreadP1 + totalDecreaseSpreadP2 + totalIncreaseSpreadP2) > 0;
 
         if (filledGamesCount < 2) { // Нет данных для анализа разбега
             spreadVerdictMessage += `<span class="text-warning-custom">Недостаточно данных (требуется мин. 2 гейма)</span>`;
@@ -379,33 +371,36 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // --- Динамика последнего заполненного гейма ---
         let lastGameSpreadDynamicMessage = '';
-        if (lastFilledGameIndex > 0) { // Нужен хотя бы один предыдущий гейм
+        let lastGameP1Change = null;
+        let lastGameP2Change = null;
+
+        if (lastFilledGameIndex > 0 && !isNaN(player1Coeffs[lastFilledGameIndex]) && !isNaN(player2Coeffs[lastFilledGameIndex]) &&
+            !isNaN(player1Coeffs[lastFilledGameIndex - 1]) && !isNaN(player2Coeffs[lastFilledGameIndex - 1])) { 
+            
             const p1Last = player1Coeffs[lastFilledGameIndex];
             const p2Last = player2Coeffs[lastFilledGameIndex];
             const p1Prev = player1Coeffs[lastFilledGameIndex - 1];
             const p2Prev = player2Coeffs[lastFilledGameIndex - 1];
 
-            if (!isNaN(p1Last) && !isNaN(p2Last) && !isNaN(p1Prev) && !isNaN(p2Prev)) {
-                const spreadP1Last = p1Prev - p1Last;
-                const spreadP2Last = p2Prev - p2Last;
+            lastGameP1Change = p1Prev - p1Last;
+            lastGameP2Change = p2Prev - p2Last;
 
-                let p1ChangeText = '';
-                let p2ChangeText = '';
-                let p1Class = '';
-                let p2Class = '';
+            let p1ChangeText = '';
+            let p2ChangeText = '';
+            let p1Class = '';
+            let p2Class = '';
 
-                if (spreadP1Last > 0) { p1ChangeText = `снизился на ${spreadP1Last.toFixed(2)}`; p1Class = 'text-success-custom'; }
-                else if (spreadP1Last < 0) { p1ChangeText = `вырос на ${Math.abs(spreadP1Last).toFixed(2)}`; p1Class = 'text-danger-custom'; }
-                else { p1ChangeText = `не изменился`; p1Class = 'text-info-custom'; }
+            if (lastGameP1Change > 0) { p1ChangeText = `снизился на ${lastGameP1Change.toFixed(2)}`; p1Class = 'text-success-custom'; }
+            else if (lastGameP1Change < 0) { p1ChangeText = `вырос на ${Math.abs(lastGameP1Change).toFixed(2)}`; p1Class = 'text-danger-custom'; }
+            else { p1ChangeText = `не изменился`; p1Class = 'text-info-custom'; }
 
-                if (spreadP2Last > 0) { p2ChangeText = `снизился на ${spreadP2Last.toFixed(2)}`; p2Class = 'text-success-custom'; }
-                else if (spreadP2Last < 0) { p2ChangeText = `вырос на ${Math.abs(spreadP2Last).toFixed(2)}`; p2Class = 'text-danger-custom'; }
-                else { p2ChangeText = `не изменился`; p2Class = 'text-info-custom'; }
+            if (lastGameP2Change > 0) { p2ChangeText = `снизился на ${lastGameP2Change.toFixed(2)}`; p2Class = 'text-success-custom'; }
+            else if (lastGameP2Change < 0) { p2ChangeText = `вырос на ${Math.abs(lastGameP2Change).toFixed(2)}`; p2Class = 'text-danger-custom'; }
+            else { p2ChangeText = `не изменился`; p2Class = 'text-info-custom'; }
 
-                lastGameSpreadDynamicMessage = `<br><strong>Динамика посл. гейма (Г${games[lastFilledGameIndex]}):</strong><br>`;
-                lastGameSpreadDynamicMessage += `И1: <span class="${p1Class}">Кф. ${p1ChangeText}.</span><br>`;
-                lastGameSpreadDynamicMessage += `И2: <span class="${p2Class}">Кф. ${p2ChangeText}.</span>`;
-            }
+            lastGameSpreadDynamicMessage = `<br><strong>Динамика посл. гейма (Г${games[lastFilledGameIndex]}):</strong><br>`;
+            lastGameSpreadDynamicMessage += `И1: <span class="${p1Class}">Кф. ${p1ChangeText}.</span><br>`;
+            lastGameSpreadDynamicMessage += `И2: <span class="${p2Class}">Кф. ${p2ChangeText}.</span>`;
         }
         document.getElementById('last_game_spread_dynamic').innerHTML = lastGameSpreadDynamicMessage;
 
@@ -433,7 +428,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         let smallestDecimalWinnerMessage = "Вероятный победитель (меньшая дес. часть): ";
-        let smallestDecimalWinnerClass = 'text-info-custom'; // По умолчанию информационный цвет
+        let smallestDecimalWinnerClass = 'text-info-custom'; 
 
         if (comparisonCount === 0) {
             smallestDecimalWinnerMessage += `<span class="text-warning-custom">Недостаточно данных (нет пар Кф. для сравнения)</span>`;
@@ -451,10 +446,129 @@ document.addEventListener('DOMContentLoaded', function() {
 
         document.getElementById('overall_winner_smallest_decimal').innerHTML = smallestDecimalWinnerMessage;
         document.getElementById('overall_winner_smallest_decimal').className = `text-center ${smallestDecimalWinnerClass}`;
+
+        // Возвращаем данные для использования в overall prediction
+        return {
+            player1Coeffs, player2Coeffs, lastFilledGameIndex,
+            totalDecimalPlayer1, totalDecimalPlayer2,
+            lastGameP1Change, lastGameP2Change,
+            player1SmallestDecimalWins, player2SmallestDecimalWins, comparisonCount,
+            filledGamesCount // Добавлено для проверки минимального количества геймов для прогноза
+        };
     }
 
-    // Инициализируем расчет при загрузке страницы, чтобы показать начальные сообщения
+    // --- Новая функция для формирования общего прогноза ---
+    function updateOverallPrediction() {
+        const data = calculateWinner(); // Получаем все расчетные данные
+        let predictionText = '';
+        let predictionClass = ''; // Класс для цвета текста
+        const SIGNIFICANT_DROP_THRESHOLD = 0.05; // Порог для "сильного снижения" Кф.
+
+        if (!data || data.lastFilledGameIndex === -1 || !data.allCoeffsValid) {
+            overallPredictionElement.textContent = ''; // Скрываем прогноз, если нет валидных данных
+            overallPredictionElement.classList.remove('text-success-custom', 'text-info-custom', 'text-warning-custom');
+            return;
+        }
+
+        const {
+            player1Coeffs, player2Coeffs, lastFilledGameIndex,
+            totalDecimalPlayer1, totalDecimalPlayer2,
+            lastGameP1Change, lastGameP2Change,
+            player1SmallestDecimalWins, player2SmallestDecimalWins, comparisonCount,
+            filledGamesCount
+        } = data;
+
+        // Проверяем, есть ли хотя бы 2 заполненных гейма для более осмысленного прогноза
+        if (filledGamesCount < 2) {
+            overallPredictionElement.textContent = 'Введите больше данных для прогноза.';
+            overallPredictionElement.classList.add('text-warning-custom');
+            return;
+        }
+
+        // 1. Динамика последнего гейма (самый высокий приоритет)
+        let hasLastGameWinner = false;
+        if (lastFilledGameIndex > 0 && !isNaN(lastGameP1Change) && !isNaN(lastGameP2Change)) {
+            // Игрок 1 сильно снизился, Игрок 2 вырос или стабилен
+            if (lastGameP1Change > SIGNIFICANT_DROP_THRESHOLD && lastGameP2Change <= 0.01) { // 0.01 для учета очень малых изменений
+                predictionText = 'Победит Игрок 1 (динамика Кф. последнего гейма)';
+                predictionClass = 'text-success-custom';
+                hasLastGameWinner = true;
+            } 
+            // Игрок 2 сильно снизился, Игрок 1 вырос или стабилен
+            else if (lastGameP2Change > SIGNIFICANT_DROP_THRESHOLD && lastGameP1Change <= 0.01) {
+                predictionText = 'Победит Игрок 2 (динамика Кф. последнего гейма)';
+                predictionClass = 'text-success-custom';
+                hasLastGameWinner = true;
+            }
+            // Оба сильно снизились - неопределенно по этому фактору
+            else if (lastGameP1Change > SIGNIFICANT_DROP_THRESHOLD && lastGameP2Change > SIGNIFICANT_DROP_THRESHOLD) {
+                // Если снижение примерно равное
+                if (Math.abs(lastGameP1Change - lastGameP2Change) < 0.02) { // Малая разница в снижении
+                    predictionText = 'Динамика по последнему гейму неявная';
+                    predictionClass = 'text-info-custom';
+                } else if (lastGameP1Change > lastGameP2Change) {
+                    predictionText = 'Победит Игрок 1 (небольшое превосходство в динамике)';
+                    predictionClass = 'text-warning-custom'; // Не так уверенно, как strong drop
+                } else {
+                    predictionText = 'Победит Игрок 2 (небольшое превосходство в динамике)';
+                    predictionClass = 'text-warning-custom';
+                }
+            }
+        }
+
+        if (hasLastGameWinner) {
+            overallPredictionElement.textContent = predictionText;
+            overallPredictionElement.className = `text-center ${predictionClass}`;
+            return;
+        }
+
+        // 2. Сумма десятичных частей (второй приоритет)
+        if (filledGamesCount >= 1) { // Требуется хотя бы 1 заполненный гейм для суммы дес. частей
+            const decimalDiff = Math.abs(totalDecimalPlayer1 - totalDecimalPlayer2);
+            const DECIMALS_TIE_THRESHOLD = 0.005; // Порог для считания разницы незначительной
+
+            if (decimalDiff > DECIMALS_TIE_THRESHOLD) { // Есть явная разница
+                if (totalDecimalPlayer1 < totalDecimalPlayer2) {
+                    predictionText = 'Победит Игрок 1 (меньшая сумма дес. частей)';
+                    predictionClass = 'text-success-custom';
+                } else {
+                    predictionText = 'Победит Игрок 2 (меньшая сумма дес. частей)';
+                    predictionClass = 'text-success-custom';
+                }
+                overallPredictionElement.textContent = predictionText;
+                overallPredictionElement.className = `text-center ${predictionClass}`;
+                return;
+            } else {
+                predictionText = 'Сумма дес. частей: Неопределённо (близкие значения)';
+                predictionClass = 'text-info-custom';
+            }
+        }
+        
+        // 3. Вероятный победитель (меньшая дес. часть) (третий приоритет, если предыдущие не сработали)
+        if (comparisonCount >= 1) { // Достаточно данных для сравнения меньших десятичных частей
+            if (player1SmallestDecimalWins > player2SmallestDecimalWins) {
+                predictionText = `Победит Игрок 1 (чаще имеет меньшие дес. части)`;
+                predictionClass = 'text-info-custom'; // Менее уверенный прогноз
+            } else if (player2SmallestDecimalWins > player1SmallestDecimalWins) {
+                predictionText = `Победит Игрок 2 (чаще имеет меньшие дес. части)`;
+                predictionClass = 'text-info-custom'; // Менее уверенный прогноз
+            } else {
+                predictionText = `Прогноз неопределён (равные шансы по всем параметрам)`;
+                predictionClass = 'text-warning-custom';
+            }
+        } else {
+            predictionText = `Прогноз неопределён (недостаточно данных)`;
+            predictionClass = 'text-warning-custom';
+        }
+
+        overallPredictionElement.textContent = predictionText;
+        overallPredictionElement.className = `text-center ${predictionClass}`;
+    }
+
+    // Инициализируем расчет и отображение прогноза при загрузке страницы
+    // и при каждом изменении в полях ввода, а также после очистки.
     calculateWinner();
+    updateOverallPrediction();
 
     // Присваиваем фокус первому полю при загрузке, чтобы сразу была активна клавиатура
     if (inputElements.length > 0) {
