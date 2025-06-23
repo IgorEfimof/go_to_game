@@ -74,32 +74,40 @@ input.form-control::placeholder {
     opacity: 1;
 }
 
-/* Ошибка и результат */
+/* --- Результат и ошибки --- */
 #result, #error {
-    background: #222 !important; /* Цвет фона изменен для большей контрастности */
+    background: #222 !important;
     color: #fff;
-    padding: 0.5rem !important; /* Уменьшен padding */
-    margin-top: 0.6rem !important; /* Уменьшен отступ сверху */
-    border-radius: 0.25rem; /* Соответствует Bootstrap's default */
+    padding: 0.5rem !important;
+    margin-top: 0.6rem !important;
+    border-radius: 0.25rem;
     min-height: auto;
     box-sizing: border-box;
     overflow: hidden;
     transition: opacity 0.3s ease-in-out;
     opacity: 0;
-    pointer-events: none; /* Скрытые элементы не реагируют на клики */
+    pointer-events: none;
+    /* Убираем жесткую ширину для адаптивности */
+    width: auto;
+    max-width: 100%;
+    /* Добавляем flexbox для внутреннего содержимого результата */
+    display: flex;
+    flex-direction: column; /* Элементы по вертикали */
+    align-items: center; /* Центрируем содержимое по горизонтали */
+    text-align: center; /* Текст тоже по центру */
 }
 
 #result.visible, #error.visible {
     opacity: 1;
-    pointer-events: auto; /* Видимые элементы реагируют на клики */
+    pointer-events: auto;
 }
 
 #error {
-    background-color: #dc3545; /* Красный для ошибок */
+    background-color: #dc3545;
     border-radius: 0.6rem;
-    font-size: 0.85rem; /* Уменьшен размер шрифта */
+    font-size: 0.85rem;
     margin-bottom: 0;
-    padding: 0.5rem; /* Уточнение padding */
+    padding: 0.5rem;
 }
 
 /* Класс для выделения некорректного поля */
@@ -108,8 +116,8 @@ input.is-invalid {
     background: #402828 !important; /* Более темный красный фон */
 }
 
-/* Кнопка (если потребуется) */
-.btn-secondary { /* Изменено с .btn-primary, так как кнопка Очистить - secondary */
+/* Кнопка */
+.btn-secondary {
     background-color: #444 !important;
     border-color: #666 !important;
     color: #fff !important;
@@ -122,32 +130,51 @@ input.is-invalid {
     color: #fff !important;
 }
 
-/* Уменьшаем отступы между колонками для компактности */
+/* --- Настройка колонок для компактности и центрирования --- */
+/* Общие отступы между колонками */
 .row > * {
-    padding-left: 1px !important; /* Уменьшаем левый отступ */
-    padding-right: 1px !important; /* Уменьшаем правый отступ */
+    padding-left: 1px !important;
+    padding-right: 1px !important;
 }
 
-/* Центрирование на десктопах */
-@media (min-width: 768px) {
-    .container {
-        max-width: 320px; /* Уточняем ширину */
-    }
-    .form-container {
-        max-height: calc(100vh - 20px);
-    }
+/* Ширина колонки для номера гейма */
+.col-2 {
+    flex: 0 0 16.66666667%; /* Bootstrap's default for col-2 */
+    max-width: 16.66666667%; /* Bootstrap's default for col-2 */
+    /* Здесь можно было бы сделать фиксированную ширину, если 16.66% слишком много */
+    /* width: 40px; /* Пример: фиксированная ширина для номера гейма */
+    /* flex: 0 0 40px; */
 }
 
-/* Адаптив для мобильных (iPad narrow screen) */
-@media (max-width: 576px) {
-    .form-label { font-size: 0.7rem; } /* Еще уменьшим размер шрифта на мобильных */
-    input.form-control { font-size: 0.8rem; height: 22px; padding: 0 0.2rem; } /* Еще уменьшим поля на мобильных */
-    h1 { font-size: 1rem; margin-bottom: 0.5rem !important;} /* Еще уменьшим заголовок */
-    .card { padding: 0.5rem !important; } /* Еще уменьшим padding карточки */
-    .text-muted { font-size: 0.65rem !important; } /* Уменьшим размер текста */
-    #result h4 { font-size: 0.8rem; }
-    #result p, #result h5 { font-size: 0.7rem; }
+/* Выравнивание заголовков "Игрок 1" и "Игрок 2" */
+/* Поскольку теперь они в .col, используем justify-content */
+.row.text-center.mb-2 {
+    display: flex;
+    justify-content: space-between; /* Распределяет пространство между элементами */
+    align-items: center; /* Выравнивает по центру по вертикали */
 }
+.row.text-center.mb-2 > .col:first-child {
+    flex: 0 0 16.66666667%; /* Отступ для первой пустой колонки */
+    max-width: 16.66666667%;
+}
+.row.text-center.mb-2 > .col {
+    text-align: center; /* Убедимся, что текст центрирован внутри этих колонок */
+}
+
+
+/* Уменьшаем отступы между строками */
+.mb-1 { margin-bottom: 0.1rem !important; }
+.mb-2 { margin-bottom: 0.4rem !important; }
+.mb-3 { margin-bottom: 0.6rem !important; }
+.mt-3 { margin-top: 0.6rem !important; }
+.mt-4 { margin-top: 0.8rem !important; }
+
+/* Уменьшаем размеры шрифтов для компактности */
+h1 { font-size: 1.1rem !important; margin-bottom: 0.6rem !important; }
+p.text-muted { font-size: 0.7rem !important; margin-bottom: 0.6rem !important; }
+#result h4 { font-size: 0.9rem; margin-bottom: 0.3rem !important; }
+#result p { margin-bottom: 0.05rem; font-size: 0.75rem; line-height: 1.1; }
+#result h5 { font-size: 0.85rem; margin-top: 0.3rem; margin-bottom: 0; }
 
 /* Прочие утилиты */
 .text-center { text-align: center !important; }
@@ -163,14 +190,13 @@ input.is-invalid {
     background-color: #2a2a2a;
     padding: 10px;
     box-shadow: 0 -5px 15px rgba(0,0,0,0.5);
-    z-index: 10000; /* Очень высокий z-index, чтобы всегда быть поверх */
+    z-index: 10000;
     transform: translateY(100%);
     transition: transform 0.3s ease-out;
-    display: none;
-    box-sizing: border-box;
-    display: flex; /* Изначально flex, но с transform: translateY(100%) */
+    display: flex; /* Always flex, but hidden by transform */
     justify-content: center;
     align-items: center;
+    box-sizing: border-box;
 }
 
 #custom-keyboard-container.show {
@@ -218,8 +244,29 @@ input.is-invalid {
 #custom-keyboard button.decimal-btn:active {
     background-color: #0056b3;
 }
+
 /* Дополнительные классы для результатов */
-.text-success-custom { color: #28a745 !important; } /* Зеленый для победителя */
-.text-danger-custom { color: #dc3545 !important; } /* Красный для проигравшего/неопределенности */
-.text-info-custom { color: #17a2b8 !important; }    /* Синий для информационных сообщений */
-.text-warning-custom { color: #ffc107 !important; } /* Желтый для предупреждений */
+.text-success-custom { color: #28a745 !important; }
+.text-danger-custom { color: #dc3545 !important; }
+.text-info-custom { color: #17a2b8 !important; }
+.text-warning-custom { color: #ffc107 !important; }
+
+/* Медиа-запрос для широких планшетов/десктопов, чтобы не делать слишком узко */
+@media (min-width: 768px) {
+    .container {
+        max-width: 320px;
+    }
+    .form-container {
+        max-height: calc(100vh - 20px);
+    }
+}
+/* Адаптив для мобильных (iPad narrow screen) */
+@media (max-width: 576px) {
+    .form-label { font-size: 0.7rem; }
+    input.form-control { font-size: 0.8rem; height: 22px; padding: 0 0.2rem; }
+    h1 { font-size: 1rem; margin-bottom: 0.5rem !important;}
+    .card { padding: 0.5rem !important; }
+    .text-muted { font-size: 0.65rem !important; }
+    #result h4 { font-size: 0.8rem; }
+    #result p, #result h5 { font-size: 0.7rem; }
+}
