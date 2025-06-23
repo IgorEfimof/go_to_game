@@ -80,11 +80,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('Input blurred:', this.id, 'relatedTarget:', e.relatedTarget ? e.relatedTarget.tagName : 'none');
                 // Если blur происходит из-за потери фокуса вне полей/клавиатуры, скрываем
                 // Если связанный элемент (relatedTarget) не является частью клавиатуры
-                if (e.relatedTarget === null || !keyboardContainer.contains(e.relatedTarget)) {
-                    // Проверяем, является ли следующий фокус элементом вне клавиатуры
-                    const nextFocusedElement = setTimeout(() => document.activeElement, 0); // Получаем следующий активный элемент асинхронно
-                    if (nextFocusedElement === null || !keyboardContainer.contains(nextFocusedElement)) {
-                       // hideKeyboard(); // Скрываем, если фокус ушел куда-то еще
+                // Проверяем, является ли следующий фокус элементом вне клавиатуры
+                // (Исправлено) - Вместо setTimeout для nextFocusedElement, используем currentTarget и relatedTarget более надежно
+                if (e.relatedTarget === null || (!keyboardContainer.contains(e.relatedTarget) && !inputElements.some(el => el === e.relatedTarget))) {
+                    // Проверяем, если focus уходит на другой инпут или за пределы клавиатуры
+                    if (!inputElements.includes(e.relatedTarget)) { // Если relatedTarget не является другим полем ввода
+                         // hideKeyboard(); // Скрываем, если фокус ушел куда-то еще, кроме другого поля ввода
                     }
                 }
             });
