@@ -14,7 +14,7 @@ body.bg-dark-custom {
 /* Карточка формы */
 .container {
     flex-grow: 1; /* Разрешаем контейнеру расти, чтобы заполнить доступное пространство */
-    max-width: 340px; /* Оптимальная ширина для большинства мобильных устройств, чуть шире */
+    max-width: 320px; /* Оптимальная фиксированная ширина для формы на мобильных */
     padding: 0; /* Убираем стандартный padding контейнера Bootstrap */
 }
 
@@ -55,9 +55,9 @@ input.form-control:focus {
     border-radius: 0.4rem;
     box-shadow: none;
     transition: border-color 0.2s, box-shadow 0.2s;
-    height: 28px; /* Немного увеличена высота поля для лучшей интерактивности */
+    height: 28px; /* Высота поля */
     padding: 0 0.5rem; /* Отступы внутри поля */
-    font-size: 0.9rem; /* Немного увеличен размер шрифта */
+    font-size: 0.9rem; /* Размер шрифта */
     text-align: center;
     caret-color: transparent;
     -webkit-user-select: none;
@@ -84,8 +84,8 @@ input.form-control::placeholder {
 #result, #error {
     background: #222 !important;
     color: #fff;
-    padding: 0.5rem !important; /* Уменьшен padding для компактности */
-    margin-top: 0.8rem !important; /* Отступ сверху */
+    padding: 0.5rem 0.25rem !important; /* Уменьшен padding для компактности, особенно по бокам */
+    margin-top: 0.8rem !important;
     border-radius: 0.25rem;
     min-height: auto;
     box-sizing: border-box;
@@ -134,34 +134,35 @@ input.is-invalid {
     color: #fff !important;
 }
 
-/* --- Настройка колонок и выравнивания --- */
+/* --- Настройка колонок и выравнивания: ТОЧНЫЙ КОНТРОЛЬ --- */
+
 /* Убираем лишние отступы между col в row */
 .row > * {
     padding-left: 3px !important; /* Уменьшаем боковые отступы между колонками */
     padding-right: 3px !important;
 }
 
-/* Заголовки "Игрок 1" и "Игрок 2" */
+/* Класс для "пустой" колонки, которая замещает номер гейма */
+.col-game-id {
+    flex: 0 0 20%; /* Жестко задаем ширину, чтобы она всегда была 20% */
+    max-width: 20%;
+    /* margin-left: auto; */ /* Если бы нужно было сместить вправо */
+    /* margin-right: auto; */ /* Если бы нужно было сместить влево */
+    text-align: right; /* На случай, если что-то будет видно */
+    padding-right: 0px !important; /* Убираем правый паддинг, чтобы кф. были ближе */
+}
+
+/* Классы для колонок с данными игроков (Кф.) */
+.col-player-data {
+    flex-grow: 1; /* Позволяем им занимать оставшееся пространство */
+    text-align: center; /* Центрируем содержимое (текст, инпуты) внутри колонки */
+}
 .player-header {
-    flex-grow: 1;
-    text-align: center;
     font-weight: bold;
     font-size: 0.9rem;
+    line-height: 1.2; /* Для компактности */
 }
 
-/* Колонка-заполнитель для номера гейма, чтобы выровнять Кф. по центру */
-.game-number-placeholder {
-    flex: 0 0 20%; /* Ширина для заполнителя (примерно 1/5 от общей ширины) */
-    max-width: 20%;
-    /* Здесь мы не используем display:none для скрытия, а `visually-hidden` для сохранения места */
-    /* Если бы мы использовали display: none, то .col рядом с ним заняли бы больше места */
-}
-
-/* Колонки для полей ввода игрока (Кф.) */
-.player-input-col {
-    flex-grow: 1; /* Позволяем им расти и занимать равное оставшееся пространство */
-    text-align: center; /* Центрируем содержимое колонки */
-}
 
 /* Уменьшаем отступы между строками и элементами */
 .mb-1 { margin-bottom: 0.1rem !important; }
@@ -174,16 +175,17 @@ input.is-invalid {
 h1 { font-size: 1.2rem !important; margin-bottom: 0.6rem !important; }
 p.text-muted { font-size: 0.75rem !important; margin-bottom: 0.6rem !important; }
 
-/* Специальные стили для текста в результатах */
+/* Специальные стили для текста в результатах: Сжатие и адаптация */
 #result p {
     margin-bottom: 0.05rem; /* Очень маленький отступ между параграфами */
     font-size: 0.75rem; /* Уменьшаем размер шрифта */
-    line-height: 1.2; /* Межстрочный интервал */
+    line-height: 1.1; /* Межстрочный интервал для плотности */
     word-break: break-word; /* Разрешаем разрыв слов, чтобы длинные строки помещались */
     white-space: normal; /* Отменяем nowrap, чтобы текст переносился */
     text-overflow: clip; /* Отменяем многоточие */
     max-width: 100%; /* Занимает всю доступную ширину */
-    padding: 0 5px; /* Небольшие внутренние отступы, чтобы текст не прилипал к краям */
+    padding: 0 2px; /* Минимальные внутренние отступы, чтобы текст не прилипал к краям */
+    text-align: center; /* Центрирование текста */
 }
 #result h5 {
     font-size: 0.85rem;
@@ -193,7 +195,8 @@ p.text-muted { font-size: 0.75rem !important; margin-bottom: 0.6rem !important; 
     white-space: normal;
     text-overflow: clip;
     max-width: 100%;
-    padding: 0 5px;
+    padding: 0 2px;
+    text-align: center;
 }
 
 /* Прочие утилиты */
@@ -304,10 +307,10 @@ p.text-muted { font-size: 0.75rem !important; margin-bottom: 0.6rem !important; 
     .btn-secondary { font-size: 0.75rem; padding: 0.25rem 0.5rem; }
 }
 
-/* Для iPad в горизонтальном режиме (ширина около 768-1024px, но у нас ограничение max-width: 340px) */
+/* Для iPad в горизонтальном режиме (ширина около 768-1024px, но у нас ограничение max-width: 320px) */
 /* Эти правила будут применяться, если макет остается узким */
 @media (min-width: 768px) {
     .container {
-        max-width: 380px; /* Чуть шире на больших экранах, сохраняя компактность */
+        max-width: 350px; /* Чуть шире на больших экранах, сохраняя компактность */
     }
 }
