@@ -219,73 +219,11 @@
         .text-success-custom { color: #28a745 !important; } /* Зеленый для победителя */
         .text-danger-custom { color: #dc3545 !important; } /* Красный для проигравшего/неопределенности */
         .text-info-custom { color: #17a2b8 !important; }   /* Синий для информационных сообщений */
-        .text-warning-custom { color: #ffc107 !important; } /* Желтый для предупреждений */
-
-        /* --- New AI Prediction Block Styles --- */
-        #ai-prediction-block {
-            background: #222 !important;
-            color: #fff;
-            padding: 1.5rem !important;
-            margin-top: 0.6rem !important;
-            border-radius: 0.375rem;
-            min-height: auto;
-            box-sizing: border-box;
-            text-align: center;
-            opacity: 0;
-            transition: opacity 0.3s ease-in-out;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100%; /* Занимаем всю доступную высоту в контейнере */
-        }
-        #ai-prediction-block.visible {
-            opacity: 1;
-            pointer-events: auto;
-        }
-        #ai-prediction-block h2 {
-            font-size: 1.2rem;
-            margin-bottom: 1rem;
-            color: #fff;
-        }
-        #ai-prediction-block .predicted-winner-number {
-            font-size: 5rem; /* Большая цифра */
-            font-weight: bold;
-            line-height: 1;
-            margin-bottom: 1rem;
-            text-shadow: 0 0 10px rgba(0,255,0,0.5); /* Небольшая тень для эффекта */
-            color: #28a745; /* Зеленый цвет по умолчанию для победителя */
-        }
-        #ai-prediction-block .predicted-reason {
-            font-size: 0.9rem;
-            margin-bottom: 1.5rem;
-            color: #ccc;
-        }
-        #ai-prediction-block .btn {
-            font-size: 0.9rem;
-            padding: 0.5rem 1.5rem;
-        }
-
-        /* Для скрытия основного блока с формой и результатом */
-        #main-content-block.hidden {
-            display: none;
-            opacity: 0;
-            pointer-events: none;
-        }
-        /* Убедимся, что форма-контейнер виден или скрыт */
-        .form-container.hidden {
-            display: none;
-        }
-        .form-container.visible {
-            display: block;
-        }
-
     </style>
 </head>
 <body class="bg-dark-custom">
     <div class="container mt-3">
-        <div id="main-content-block" class="form-container card shadow-sm visible">
+        <div class="form-container card shadow-sm">
             <h1 class="text-center">Калькулятор (Лайв)</h1>
             <p class="text-muted text-center mb-3">
                 Введите коэффициенты на геймы 5-10
@@ -385,13 +323,6 @@
                 <h5 id="overall_winner_smallest_decimal" class="text-center"></h5>
             </div>
             <div id="error" class="mt-4 alert alert-danger"></div>
-        </div>
-
-        <div id="ai-prediction-block" class="card shadow-sm" style="display: none;">
-            <h2>Прогноз ИИ</h2>
-            <div id="predicted-winner-number" class="predicted-winner-number"></div>
-            <p id="predicted-reason" class="predicted-reason"></p>
-            <button id="newCalculationBtn" class="btn btn-primary mt-3">Новый расчет</button>
         </div>
     </div>
 
