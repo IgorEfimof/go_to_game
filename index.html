@@ -2,127 +2,110 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Анализатор Кф. Тенниса</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Калькулятор НТ</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/style.css">
 </head>
-<body>
-    <div class="container my-4">
-        <div class="row justify-content-center">
-            <div class="col-12 col-md-8 col-lg-6">
-                <div class="card shadow-sm custom-card">
-                    <div class="card-body">
-                        <h1 class="text-center mb-3 fw-bold" id="appTitle">Анализ Кф. Тенниса</h1>
-                        <p class="text-center text-muted mt-0 mb-0" id="predictionOutput">Ожидание данных...</p>
-                        <p class="text-center text-muted">Введите коэффициенты для геймов 5-10:</p>
-
-                        <div class="row g-2 mb-3">
-                            <div class="col text-center fw-bold">Гейм</div>
-                            <div class="col text-center fw-bold">Игрок 1</div>
-                            <div class="col text-center fw-bold">Игрок 2</div>
-                        </div>
-
-                        <div id="games-inputs">
-                            <div class="row g-2 mb-2 align-items-center">
-                                <div class="col text-center fw-bold">5</div>
-                                <div class="col">
-                                    <input type="number" id="g5P1" class="form-control text-center input-coeff" placeholder="Кф. И1" min="1.00" max="10.00" step="0.01" inputmode="decimal" maxlength="4">
-                                </div>
-                                <div class="col">
-                                    <input type="number" id="g5P2" class="form-control text-center input-coeff" placeholder="Кф. И2" min="1.00" max="10.00" step="0.01" inputmode="decimal" maxlength="4">
-                                </div>
-                            </div>
-                            <div class="row g-2 mb-2 align-items-center">
-                                <div class="col text-center fw-bold">6</div>
-                                <div class="col">
-                                    <input type="number" id="g6P1" class="form-control text-center input-coeff" placeholder="Кф. И1" min="1.00" max="10.00" step="0.01" inputmode="decimal" maxlength="4">
-                                </div>
-                                <div class="col">
-                                    <input type="number" id="g6P2" class="form-control text-center input-coeff" placeholder="Кф. И2" min="1.00" max="10.00" step="0.01" inputmode="decimal" maxlength="4">
-                                </div>
-                            </div>
-                            <div class="row g-2 mb-2 align-items-center">
-                                <div class="col text-center fw-bold">7</div>
-                                <div class="col">
-                                    <input type="number" id="g7P1" class="form-control text-center input-coeff" placeholder="Кф. И1" min="1.00" max="10.00" step="0.01" inputmode="decimal" maxlength="4">
-                                </div>
-                                <div class="col">
-                                    <input type="number" id="g7P2" class="form-control text-center input-coeff" placeholder="Кф. И2" min="1.00" max="10.00" step="0.01" inputmode="decimal" maxlength="4">
-                                </div>
-                            </div>
-                            <div class="row g-2 mb-2 align-items-center">
-                                <div class="col text-center fw-bold">8</div>
-                                <div class="col">
-                                    <input type="number" id="g8P1" class="form-control text-center input-coeff" placeholder="Кф. И1" min="1.00" max="10.00" step="0.01" inputmode="decimal" maxlength="4">
-                                </div>
-                                <div class="col">
-                                    <input type="number" id="g8P2" class="form-control text-center input-coeff" placeholder="Кф. И2" min="1.00" max="10.00" step="0.01" inputmode="decimal" maxlength="4">
-                                </div>
-                            </div>
-                            <div class="row g-2 mb-2 align-items-center">
-                                <div class="col text-center fw-bold">9</div>
-                                <div class="col">
-                                    <input type="number" id="g9P1" class="form-control text-center input-coeff" placeholder="Кф. И1" min="1.00" max="10.00" step="0.01" inputmode="decimal" maxlength="4">
-                                </div>
-                                <div class="col">
-                                    <input type="number" id="g9P2" class="form-control text-center input-coeff" placeholder="Кф. И2" min="1.00" max="10.00" step="0.01" inputmode="decimal" maxlength="4">
-                                </div>
-                            </div>
-                            <div class="row g-2 mb-3 align-items-center">
-                                <div class="col text-center fw-bold">10</div>
-                                <div class="col">
-                                    <input type="number" id="g10P1" class="form-control text-center input-coeff" placeholder="Кф. И1" min="1.00" max="10.00" step="0.01" inputmode="decimal" maxlength="4">
-                                </div>
-                                <div class="col">
-                                    <input type="number" id="g10P2" class="form-control text-center input-coeff" placeholder="Кф. И2" min="1.00" max="10.00" step="0.01" inputmode="decimal" maxlength="4">
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="d-grid gap-2 mb-3">
-                            <button id="clearDataBtn" class="btn btn-outline-secondary">Очистить данные</button>
-                        </div>
-
-                        <div id="error" class="alert alert-danger fade show error-message" role="alert">
-                            Проверьте формат коэффициентов (например, 1.85). Значения должны быть от 1.00 до 10.00.
-                        </div>
-
-                        <div id="result" class="mt-4 p-3 border rounded shadow-sm result-section">
-                            <h5 class="mb-3 text-center">Результаты анализа:</h5>
-
-                            <div class="result-category">
-                                <p class="fw-bold">Сумма десятичных частей:</p>
-                                <p id="player1_sum">Сумма дес. частей (И1):</p>
-                                <p id="player2_sum">Сумма дес. частей (И2):</p>
-                                <p id="overall_winner_decimal_sum" class="text-center"></p>
-                                <p id="decimal_sum_verdict" class="text-center"></p>
-                            </div>
-
-                            <hr>
-
-                            <div class="result-category">
-                                <p class="fw-bold">Анализ разбега коэффициентов:</p>
-                                <p id="p1_spread_summary"></p>
-                                <p id="p2_spread_summary"></p>
-                                <p id="overall_winner_spread_analysis" class="text-center"></p>
-                                <p id="last_game_spread_dynamic" class="text-center"></p>
-                            </div>
-
-                            <hr>
-
-                            <div class="result-category">
-                                <p class="fw-bold">Победитель по меньшей десятичной части:</p>
-                                <p id="overall_winner_smallest_decimal" class="text-center"></p>
-                            </div>
-                        </div>
+<body class="bg-dark-custom">
+    <div class="container mt-3">
+        <div class="form-container card shadow-sm">
+            <h1 class="text-center">Калькулятор (Лайв)</h1>
+            <p class="text-muted text-center mb-3">
+                Введите коэффициенты на геймы 5-10
+            </p>
+            <form id="mainForm" autocomplete="off">
+                <div class="row align-items-center mb-1 game-input-row justify-content-center no-gutters">
+                    <div class="col-2 game-id-spacer visually-hidden">5</div>
+                    <div class="col-5 player-input-col">
+                        <label for="g5P1" class="form-label visually-hidden">Кф. Г5 И1</label>
+                        <input id="g5P1" name="g5P1" type="text" class="form-control form-control-sm text-center" maxlength="4" inputmode="decimal" autocomplete="off" placeholder="1.85" readonly>
+                    </div>
+                    <div class="col-5 player-input-col">
+                        <label for="g5P2" class="form-label visually-hidden">Кф. Г5 И2</label>
+                        <input id="g5P2" name="g5P2" type="text" class="form-control form-control-sm text-center" maxlength="4" inputmode="decimal" autocomplete="off" placeholder="1.91" readonly>
                     </div>
                 </div>
+                <div class="row align-items-center mb-1 game-input-row justify-content-center no-gutters">
+                    <div class="col-2 game-id-spacer visually-hidden">6</div>
+                    <div class="col-5 player-input-col">
+                        <label for="g6P1" class="form-label visually-hidden">Кф. Г6 И1</label>
+                        <input id="g6P1" name="g6P1" type="text" class="form-control form-control-sm text-center" maxlength="4" inputmode="decimal" autocomplete="off" placeholder="1.85" readonly>
+                    </div>
+                    <div class="col-5 player-input-col">
+                        <label for="g6P2" class="form-label visually-hidden">Кф. Г6 И2</label>
+                        <input id="g6P2" name="g6P2" type="text" class="form-control form-control-sm text-center" maxlength="4" inputmode="decimal" autocomplete="off" placeholder="1.91" readonly>
+                    </div>
+                </div>
+                <div class="row align-items-center mb-1 game-input-row justify-content-center no-gutters">
+                    <div class="col-2 game-id-spacer visually-hidden">7</div>
+                    <div class="col-5 player-input-col">
+                        <label for="g7P1" class="form-label visually-hidden">Кф. Г7 И1</label>
+                        <input id="g7P1" name="g7P1" type="text" class="form-control form-control-sm text-center" maxlength="4" inputmode="decimal" autocomplete="off" placeholder="1.85" readonly>
+                    </div>
+                    <div class="col-5 player-input-col">
+                        <label for="g7P2" class="form-label visually-hidden">Кф. Г7 И2</label>
+                        <input id="g7P2" name="g7P2" type="text" class="form-control form-control-sm text-center" maxlength="4" inputmode="decimal" autocomplete="off" placeholder="1.91" readonly>
+                    </div>
+                </div>
+                <div class="row align-items-center mb-1 game-input-row justify-content-center no-gutters">
+                    <div class="col-2 game-id-spacer visually-hidden">8</div>
+                    <div class="col-5 player-input-col">
+                        <label for="g8P1" class="form-label visually-hidden">Кф. Г8 И1</label>
+                        <input id="g8P1" name="g8P1" type="text" class="form-control form-control-sm text-center" maxlength="4" inputmode="decimal" autocomplete="off" placeholder="1.85" readonly>
+                    </div>
+                    <div class="col-5 player-input-col">
+                        <label for="g8P2" class="form-label visually-hidden">Кф. Г8 И2</label>
+                        <input id="g8P2" name="g8P2" type="text" class="form-control form-control-sm text-center" maxlength="4" inputmode="decimal" autocomplete="off" placeholder="1.91" readonly>
+                    </div>
+                </div>
+                <div class="row align-items-center mb-1 game-input-row justify-content-center no-gutters">
+                    <div class="col-2 game-id-spacer visually-hidden">9</div>
+                    <div class="col-5 player-input-col">
+                        <label for="g9P1" class="form-label visually-hidden">Кф. Г9 И1</label>
+                        <input id="g9P1" name="g9P1" type="text" class="form-control form-control-sm text-center" maxlength="4" inputmode="decimal" autocomplete="off" placeholder="1.85" readonly>
+                    </div>
+                    <div class="col-5 player-input-col">
+                        <label for="g9P2" class="form-label visually-hidden">Кф. Г9 И2</label>
+                        <input id="g9P2" name="g9P2" type="text" class="form-control form-control-sm text-center" maxlength="4" inputmode="decimal" autocomplete="off" placeholder="1.91" readonly>
+                    </div>
+                </div>
+                <div class="row align-items-center mb-1 game-input-row justify-content-center no-gutters">
+                    <div class="col-2 game-id-spacer visually-hidden">10</div>
+                    <div class="col-5 player-input-col">
+                        <label for="g10P1" class="form-label visually-hidden">Кф. Г10 И1</label>
+                        <input id="g10P1" name="g10P1" type="text" class="form-control form-control-sm text-center" maxlength="4" inputmode="decimal" autocomplete="off" placeholder="1.85" readonly>
+                    </div>
+                    <div class="col-5 player-input-col">
+                        <label for="g10P2" class="form-label visually-hidden">Кф. Г10 И2</label>
+                        <input id="g10P2" name="g10P2" type="text" class="form-control form-control-sm text-center" maxlength="4" inputmode="decimal" autocomplete="off" placeholder="1.91" readonly>
+                    </div>
+                </div>
+            </form>
+            <div class="d-grid gap-2 mt-3 mb-2">
+                <button id="clearDataBtn" class="btn btn-secondary btn-sm">Очистить</button>
             </div>
+            <div id="result" class="mt-4 p-3 border rounded">
+                <h4 class="text-center">Результат:</h4>
+                <p id="player1_sum"></p>
+                <p id="player2_sum"></p>
+                <h5 id="overall_winner_decimal_sum" class="text-center"></h5>
+                <h5 id="decimal_sum_verdict" class="text-center mt-2"></h5>
+
+                <hr>
+                <h5 class="text-center">Анализ разбега Кф.:</h5>
+                <p id="p1_spread_summary"></p>
+                <p id="p2_spread_summary"></p>
+                <h5 id="overall_winner_spread_analysis" class="text-center"></h5>
+                <p id="last_game_spread_dynamic" class="text-center mt-2"></p>
+                <hr>
+                <h5 id="overall_winner_smallest_decimal" class="text-center"></h5>
+            </div>
+            <div id="error" class="mt-4 alert alert-danger"></div>
         </div>
     </div>
 
-    <div id="custom-keyboard-container">
+    <div id="custom-keyboard-container" style="display: none;">
         <div id="custom-keyboard">
             <button data-key="1">1</button>
             <button data-key="2">2</button>
@@ -133,13 +116,13 @@
             <button data-key="7">7</button>
             <button data-key="8">8</button>
             <button data-key="9">9</button>
+            <button data-key="delete" class="delete-btn">←</button>
             <button data-key="0">0</button>
-            <button data-key=".">.</button>
-            <button data-key="delete" class="delete-button">DEL</button>
+            <button data-key="." class="decimal-btn">.</button>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-    <script src="script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="assets/js/script.js"></script>
 </body>
 </html>
