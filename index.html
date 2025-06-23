@@ -5,222 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Калькулятор НТ</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        /* Общие стили */
-        body.bg-dark-custom {
-            background: #282828 !important;
-            color: #fff;
-            min-height: 100vh;
-            display: flex;
-            align-items: center; /* Центрирование по вертикали */
-            justify-content: center; /* Центрирование по горизонтали */
-            padding: 5px;
-            overflow: hidden; /* Предотвращаем прокрутку на iOS */
-            -webkit-overflow-scrolling: touch;
-        }
-        .container {
-            flex-grow: 1;
-            max-width: 300px; /* Немного уменьшим максимальную ширину для более узких режимов */
-            padding: 0;
-        }
-        .form-container {
-            background: #333 !important;
-            color: #fff;
-            border: none;
-            padding: 0.5rem !important; /* Уменьшаем общий padding контейнера */
-            max-height: calc(100vh - 15px); /* Уменьшаем max-height, чтобы форма не обрезалась */
-            overflow-y: auto;
-            box-sizing: border-box;
-            border-radius: 0.375rem;
-            position: relative;
-            z-index: 10;
-        }
-
-        /* Поля ввода */
-        input.form-control,
-        input.form-control:focus {
-            background: #222;
-            color: #fff;
-            border: 1px solid #444;
-            height: 24px; /* Ещё немного уменьшим высоту поля */
-            padding: 0 0.3rem; /* Ещё уменьшим отступы внутри поля */
-            font-size: 0.8rem; /* Ещё уменьшим размер шрифта */
-            caret-color: transparent;
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
-            font-size: 16px; /* Важно для iOS, чтобы избежать масштабирования */
-        }
-        input.form-control::placeholder {
-            color: #aaa;
-            opacity: 1;
-        }
-        .form-control.is-invalid {
-            border-color: #dc3545;
-            padding-right: 0.3rem !important; /* Соответствует новому padding */
-            background-image: none;
-        }
-
-        /* Результат и ошибки */
-        #result, #error {
-            background: #222 !important;
-            color: #fff;
-            padding: 0.5rem !important; /* Уменьшаем padding результата/ошибки */
-            margin-top: 0.6rem !important; /* Уменьшаем отступ сверху */
-            border-radius: 0.25rem;
-            min-height: auto; /* Пусть высота подстраивается под содержимое */
-            box-sizing: border-box;
-            overflow: hidden;
-            transition: opacity 0.3s ease-in-out;
-            opacity: 0;
-            pointer-events: none;
-        }
-        #result.visible, #error.visible {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        #result h4 {
-            font-size: 0.9rem; /* Уменьшим размер шрифта заголовка результата */
-            margin-bottom: 0.3rem !important; /* Уменьшим отступ */
-        }
-        #result p {
-            margin-bottom: 0.05rem; /* Ещё уменьшим отступ между параграфами */
-            font-size: 0.75rem; /* Ещё уменьшим размер шрифта */
-            line-height: 1.1;
-        }
-        #result h5 {
-             font-size: 0.85rem; /* Ещё уменьшим размер шрифта */
-             margin-top: 0.3rem;
-             margin-bottom: 0;
-        }
-
-        /* Отступы и шрифты (уменьшаем стандартные классы Bootstrap) */
-        .mb-1 { margin-bottom: 0.2rem !important; }
-        .mb-2 { margin-bottom: 0.4rem !important; }
-        .mb-3 { margin-bottom: 0.6rem !important; }
-        .mt-3 { margin-top: 0.6rem !important; }
-        .mt-4 { margin-top: 0.8rem !important; }
-
-        h1 {
-            font-size: 1.1rem !important; /* Уменьшим основной заголовок */
-            margin-bottom: 0.6rem !important;
-        }
-        p.text-muted {
-            font-size: 0.7rem !important; /* Уменьшим размер шрифта для описания */
-            margin-bottom: 0.6rem !important;
-        }
-
-        .form-label {
-            display: block;
-            margin-bottom: 0.05rem; /* Почти убираем отступ у лейбла */
-            font-weight: normal;
-            font-size: 0.75rem; /* Ещё уменьшим размер шрифта лейбла */
-        }
-
-        /* Переопределение Bootstrap-колонок для большей компактности */
-        .col-2 { width: 16%; }
-        .col-4 { width: 34%; }
-        .col-6 { width: 50%; }
-        .row > * {
-            padding-right: 2px; /* Ещё уменьшим отступы между колонками */
-            padding-left: 2px;
-        }
-
-        /* --- Custom Keyboard Styles --- */
-        #custom-keyboard-container {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background-color: #2a2a2a;
-            padding: 10px;
-            box-shadow: 0 -5px 15px rgba(0,0,0,0.5);
-            z-index: 1000;
-            transform: translateY(100%);
-            transition: transform 0.3s ease-out;
-            display: none; /* Изначально скрыто */
-            box-sizing: border-box; /* Важно для корректного padding */
-        }
-
-        #custom-keyboard-container.show {
-            transform: translateY(0);
-            display: flex; /* Показываем как flex-контейнер */
-            justify-content: center; /* Центрируем содержимое клавиатуры */
-            align-items: center; /* Центрируем содержимое клавиатуры */
-        }
-
-        #custom-keyboard {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr); /* 3 колонки */
-            gap: 8px; /* Расстояние между кнопками */
-            max-width: 300px; /* Ограничиваем ширину клавиатуры */
-            width: 100%; /* Занимаем всю доступную ширину в max-width */
-        }
-
-        #custom-keyboard button {
-            width: 100%;
-            height: 50px;
-            font-size: 1.5rem;
-            background-color: #444;
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            -webkit-user-select: none; /* Отключаем выделение текста */
-            -webkit-tap-highlight-color: rgba(0,0,0,0); /* Убираем эффект нажатия на iOS */
-        }
-
-        #custom-keyboard button:active {
-            background-color: #555;
-        }
-
-        #custom-keyboard button.delete-btn {
-            background-color: #dc3545; /* Красная для удаления */
-        }
-        #custom-keyboard button.delete-btn:active {
-            background-color: #c82333;
-        }
-        #custom-keyboard button.decimal-btn {
-            background-color: #007bff; /* Синяя для точки */
-        }
-        #custom-keyboard button.decimal-btn:active {
-            background-color: #0056b3;
-        }
-        #custom-keyboard button.next-btn { /* Добавляем стиль для возможной кнопки "Далее" */
-            background-color: #28a745;
-        }
-        #custom-keyboard button.next-btn:active {
-            background-color: #218838;
-        }
-
-        /* Медиа-запрос для широких планшетов/десктопов, чтобы не делать слишком узко */
-        @media (min-width: 768px) {
-            .container {
-                max-width: 320px; /* Возвращаем к исходной ширине на более широких экранах */
-            }
-            .form-container {
-                max-height: calc(100vh - 20px);
-            }
-        }
-        /* Усиленная подсветка активного поля */
-        input.form-control:focus {
-            border-color: #007bff !important; /* Яркий синий, как у Bootstrap Primary */
-            box-shadow: 0 0 0 0.15rem rgba(0, 123, 255, 0.25) !important; /* Легкая тень */
-            outline: none; /* Убираем стандартный аутлайн */
-        }
-
-        /* Стили для текстовых индикаторов результата */
-        .text-success-custom { color: #28a745 !important; } /* Зеленый для победителя */
-        .text-danger-custom { color: #dc3545 !important; } /* Красный для проигравшего/неопределенности */
-        .text-info-custom { color: #17a2b8 !important; }   /* Синий для информационных сообщений */
-    </style>
-</head>
+    <link rel="stylesheet" href="assets/css/style.css"> </head>
 <body class="bg-dark-custom">
     <div class="container mt-3">
         <div class="form-container card shadow-sm">
@@ -230,13 +15,12 @@
             </p>
             <form id="mainForm" autocomplete="off">
                 <div class="row text-center mb-2">
-                    <div class="col-2"></div>
-                    <div class="col-4 fw-bold">Игрок 1</div>
+                    <div class="col-2"></div> <div class="col-4 fw-bold">Игрок 1</div>
                     <div class="col-4 fw-bold">Игрок 2</div>
                 </div>
 
                 <div class="row align-items-center mb-1">
-                    <div class="col-2 text-end fw-bold">Гейм 5</div>
+                    <div class="col-2 text-end fw-bold visually-hidden">Гейм 5</div>
                     <div class="col-4">
                         <label for="g5P1" class="form-label visually-hidden">Кф. Г5 И1</label>
                         <input id="g5P1" name="g5P1" type="text" class="form-control form-control-sm text-center" maxlength="4" inputmode="decimal" autocomplete="off" placeholder="1.85" readonly>
@@ -247,7 +31,7 @@
                     </div>
                 </div>
                 <div class="row align-items-center mb-1">
-                    <div class="col-2 text-end fw-bold">Гейм 6</div>
+                    <div class="col-2 text-end fw-bold visually-hidden">Гейм 6</div>
                     <div class="col-4">
                         <label for="g6P1" class="form-label visually-hidden">Кф. Г6 И1</label>
                         <input id="g6P1" name="g6P1" type="text" class="form-control form-control-sm text-center" maxlength="4" inputmode="decimal" autocomplete="off" placeholder="1.85" readonly>
@@ -258,7 +42,7 @@
                     </div>
                 </div>
                 <div class="row align-items-center mb-1">
-                    <div class="col-2 text-end fw-bold">Гейм 7</div>
+                    <div class="col-2 text-end fw-bold visually-hidden">Гейм 7</div>
                     <div class="col-4">
                         <label for="g7P1" class="form-label visually-hidden">Кф. Г7 И1</label>
                         <input id="g7P1" name="g7P1" type="text" class="form-control form-control-sm text-center" maxlength="4" inputmode="decimal" autocomplete="off" placeholder="1.85" readonly>
@@ -269,7 +53,7 @@
                     </div>
                 </div>
                 <div class="row align-items-center mb-1">
-                    <div class="col-2 text-end fw-bold">Гейм 8</div>
+                    <div class="col-2 text-end fw-bold visually-hidden">Гейм 8</div>
                     <div class="col-4">
                         <label for="g8P1" class="form-label visually-hidden">Кф. Г8 И1</label>
                         <input id="g8P1" name="g8P1" type="text" class="form-control form-control-sm text-center" maxlength="4" inputmode="decimal" autocomplete="off" placeholder="1.85" readonly>
@@ -280,7 +64,7 @@
                     </div>
                 </div>
                 <div class="row align-items-center mb-1">
-                    <div class="col-2 text-end fw-bold">Гейм 9</div>
+                    <div class="col-2 text-end fw-bold visually-hidden">Гейм 9</div>
                     <div class="col-4">
                         <label for="g9P1" class="form-label visually-hidden">Кф. Г9 И1</label>
                         <input id="g9P1" name="g9P1" type="text" class="form-control form-control-sm text-center" maxlength="4" inputmode="decimal" autocomplete="off" placeholder="1.85" readonly>
@@ -291,7 +75,7 @@
                     </div>
                 </div>
                 <div class="row align-items-center mb-1">
-                    <div class="col-2 text-end fw-bold">Гейм 10</div>
+                    <div class="col-2 text-end fw-bold visually-hidden">Гейм 10</div>
                     <div class="col-4">
                         <label for="g10P1" class="form-label visually-hidden">Кф. Г10 И1</label>
                         <input id="g10P1" name="g10P1" type="text" class="form-control form-control-sm text-center" maxlength="4" inputmode="decimal" autocomplete="off" placeholder="1.85" readonly>
@@ -301,7 +85,6 @@
                         <input id="g10P2" name="g10P2" type="text" class="form-control form-control-sm text-center" maxlength="4" inputmode="decimal" autocomplete="off" placeholder="1.91" readonly>
                     </div>
                 </div>
-
             </form>
             <div class="d-grid gap-2 mt-3 mb-2">
                 <button id="clearDataBtn" class="btn btn-secondary btn-sm">Очистить</button>
@@ -313,13 +96,13 @@
                 <h5 id="overall_winner_decimal_sum" class="text-center"></h5>
                 <h5 id="decimal_sum_verdict" class="text-center mt-2"></h5>
 
-
                 <hr>
                 <h5 class="text-center">Анализ разбега Кф.:</h5>
                 <p id="p1_spread_summary"></p>
                 <p id="p2_spread_summary"></p>
                 <h5 id="overall_winner_spread_analysis" class="text-center"></h5>
-                <p id="last_game_spread_dynamic" class="text-center mt-2"></p> <hr>
+                <p id="last_game_spread_dynamic" class="text-center mt-2"></p>
+                <hr>
                 <h5 id="overall_winner_smallest_decimal" class="text-center"></h5>
             </div>
             <div id="error" class="mt-4 alert alert-danger"></div>
