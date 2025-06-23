@@ -320,6 +320,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // --- Анализ суммы десятичных частей ---
         let overallWinnerDecimalSumMessage;
         let decimalSumVerdictMessage;
+        let winnerByDecimalSum = null; // Переменная для хранения победителя по дес. частям
+
         let advantageDecimal = Math.abs(totalDecimalPlayer1 - totalDecimalPlayer2);
 
         document.getElementById('player1_sum').textContent = `Сумма дес. частей (И1): ${totalDecimalPlayer1.toFixed(4)}`;
@@ -328,12 +330,15 @@ document.addEventListener('DOMContentLoaded', function() {
         if (totalDecimalPlayer1 < totalDecimalPlayer2) {
             overallWinnerDecimalSumMessage = `<span class="text-success-custom">Победитель: **Игрок 1**</span>`;
             decimalSumVerdictMessage = `Преимущество Игрока 1 по дес. частям: ${advantageDecimal.toFixed(4)}`;
+            winnerByDecimalSum = 'Игрок 1';
         } else if (totalDecimalPlayer2 < totalDecimalPlayer1) {
             overallWinnerDecimalSumMessage = `<span class="text-success-custom">Победитель: **Игрок 2**</span>`;
             decimalSumVerdictMessage = `Преимущество Игрока 2 по дес. частям: ${advantageDecimal.toFixed(4)}`;
+            winnerByDecimalSum = 'Игрок 2';
         } else {
             overallWinnerDecimalSumMessage = `<span class="text-info-custom">Вероятно трость</span>`;
             decimalSumVerdictMessage = "Разница десятичных частей = 0";
+            winnerByDecimalSum = 'Ничья'; // Или null, если ничья не является "победой"
         }
         document.getElementById('overall_winner_decimal_sum').innerHTML = overallWinnerDecimalSumMessage;
         document.getElementById('decimal_sum_verdict').innerHTML = decimalSumVerdictMessage;
@@ -357,36 +362,32 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let spreadVerdictMessage = "Вердикт по разбегу: ";
 
-        // Эти переменные p1HasHigherChances и p2HasHigherChances используются для предыдущей логики
-        // Если они не нужны для других частей кода, их можно удалить, но я оставил их для совместимости.
-        let p1HasHigherChances = p1ConfidencePercent >= 75 && totalDecreaseSpreadP1 > totalIncreaseSpreadP1;
-        let p2HasHigherChances = p2ConfidencePercent >= 75 && totalDecreaseSpreadP2 > totalIncreaseSpreadP2;
-
         const anySpreadMovement = (totalDecreaseSpreadP1 + totalIncreaseSpreadP1 + totalDecreaseSpreadP2 + totalIncreaseSpreadP2) > 0;
 
-        let overallSpreadWinner = null; // Будет хранить 'Игрок 1', 'Игрок 2' или null
+        let winnerBySpreadAnalysis = null; // Переменная для хранения победителя по разбегу
 
         if (filledGamesCount < 2) { // Нет данных для анализа разбега
             spreadVerdictMessage += `<span class="text-warning-custom">Недостаточно данных (требуется мин. 2 гейма)</span>`;
         } else {
             // Главное условие: у кого уверенность больше, тот и победитель по разбегу
             if (p1ConfidencePercent > p2ConfidencePercent) {
-                overallSpreadWinner = 'Игрок 1';
+                winnerBySpreadAnalysis = 'Игрок 1';
                 spreadVerdictMessage += `<span class="text-success-custom">Победитель по разбегу: **Игрок 1** (уверенность: ${p1ConfidencePercent.toFixed(2)}% против ${p2ConfidencePercent.toFixed(2)}%)</span>`;
             } else if (p2ConfidencePercent > p1ConfidencePercent) {
-                overallSpreadWinner = 'Игрок 2';
+                winnerBySpreadAnalysis = 'Игрок 2';
                 spreadVerdictMessage += `<span class="text-success-custom">Победитель по разбегу: **Игрок 2** (уверенность: ${p2ConfidencePercent.toFixed(2)}% против ${p1ConfidencePercent.toFixed(2)}%)</span>`;
             } else if (p1ConfidencePercent === p2ConfidencePercent && anySpreadMovement) {
                 // Если уверенность одинаковая, но есть движения, можно добавить дополнительную логику
                 // Например, кто имеет большее абсолютное снижение Кф.
                 if (totalDecreaseSpreadP1 > totalDecreaseSpreadP2) {
-                    overallSpreadWinner = 'Игрок 1';
+                    winnerBySpreadAnalysis = 'Игрок 1';
                     spreadVerdictMessage += `<span class="text-info-custom">Уверенность одинаковая, но **Игрок 1** имеет большее снижение Кф.</span>`;
                 } else if (totalDecreaseSpreadP2 > totalDecreaseSpreadP1) {
-                    overallSpreadWinner = 'Игрок 2';
+                    winnerBySpreadAnalysis = 'Игрок 2';
                     spreadVerdictMessage += `<span class="text-info-custom">Уверенность одинаковая, но **Игрок 2** имеет большее снижение Кф.</span>`;
                 } else {
                     spreadVerdictMessage += `<span class="text-info-custom">Уверенность одинаковая, и динамика Кф. схожа.</span>`;
+                    winnerBySpreadAnalysis = 'Ничья';
                 }
             } else {
                 spreadVerdictMessage += `<span class="text-warning-custom">Неопределённо (нет значимых движений Кф. или равная уверенность).</span>`;
@@ -431,47 +432,24 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('last_game_spread_dynamic').innerHTML = lastGameSpreadDynamicMessage;
 
 
-        // --- Вероятный победитель (меньшая дес. часть) ---
-        let player1SmallestDecimalWins = 0;
-        let player2SmallestDecimalWins = 0;
-        let comparisonCount = 0;
+        // --- Общий вероятный победитель ---
+        let finalWinnerMessage = "Вероятный победитель: ";
+        let finalWinnerClass = 'text-info-custom';
 
-        for (let i = 0; i <= lastFilledGameIndex; i++) { // Проходим только по заполненным геймам
-            const p1Current = player1Coeffs[i];
-            const p2Current = player2Coeffs[i];
-
-            if (!isNaN(p1Current) && !isNaN(p2Current)) {
-                const decimalP1 = Math.round((p1Current % 1) * 100);
-                const decimalP2 = Math.round((p2Current % 1) * 100);
-
-                if (decimalP1 < decimalP2) {
-                    player1SmallestDecimalWins++;
-                } else if (decimalP2 < decimalP1) {
-                    player2SmallestDecimalWins++;
-                }
-                comparisonCount++;
-            }
-        }
-
-        let smallestDecimalWinnerMessage = "Вероятный победитель (меньшая дес. часть): ";
-        let smallestDecimalWinnerClass = 'text-info-custom'; // По умолчанию информационный цвет
-
-        if (comparisonCount === 0) {
-            smallestDecimalWinnerMessage += `<span class="text-warning-custom">Недостаточно данных (нет пар Кф. для сравнения)</span>`;
-            smallestDecimalWinnerClass = 'text-warning-custom';
-        } else if (player1SmallestDecimalWins > player2SmallestDecimalWins) {
-            smallestDecimalWinnerMessage += `<span class="text-success-custom">**Игрок 1** (${player1SmallestDecimalWins} против ${player2SmallestDecimalWins})</span>`;
-            smallestDecimalWinnerClass = 'text-success-custom';
-        } else if (player2SmallestDecimalWins > player1SmallestDecimalWins) {
-            smallestDecimalWinnerMessage += `<span class="text-success-custom">**Игрок 2** (${player2SmallestDecimalWins} против ${player1SmallestDecimalWins})</span>`;
-            smallestDecimalWinnerClass = 'text-success-custom';
+        // Проверяем, есть ли победители по обоим критериям и совпадают ли они
+        if (winnerByDecimalSum && winnerBySpreadAnalysis && winnerByDecimalSum === winnerBySpreadAnalysis) {
+            finalWinnerMessage += `<span class="text-success-custom">**${winnerByDecimalSum}**</span>`;
+            finalWinnerClass = 'text-success-custom';
         } else {
-            smallestDecimalWinnerMessage += `<span class="text-info-custom">Ничья (равное количество меньших дес. частей)</span>`;
-            smallestDecimalWinnerClass = 'text-info-custom';
+            finalWinnerMessage += `<span class="text-warning-custom">Ждем хорошей погоды</span>`;
+            finalWinnerClass = 'text-warning-custom';
         }
 
-        document.getElementById('overall_winner_smallest_decimal').innerHTML = smallestDecimalWinnerMessage;
-        document.getElementById('overall_winner_smallest_decimal').className = `text-center ${smallestDecimalWinnerClass}`; // Обновляем класс для цвета
+        // Обновляем id элемента на `final_overall_winner` в вашем HTML,
+        // или используйте `overall_winner_smallest_decimal` если вы хотите перезаписать его.
+        // Я предлагаю использовать новое ID для ясности.
+        document.getElementById('overall_winner_smallest_decimal').innerHTML = finalWinnerMessage;
+        document.getElementById('overall_winner_smallest_decimal').className = `text-center ${finalWinnerClass}`;
     }
 
     // Инициализируем расчет при загрузке страницы, чтобы показать начальные сообщения
