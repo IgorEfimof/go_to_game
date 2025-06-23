@@ -85,7 +85,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (e.relatedTarget === null || (!keyboardContainer.contains(e.relatedTarget) && !inputElements.some(el => el === e.relatedTarget))) {
                     // Проверяем, если focus уходит на другой инпут или за пределы клавиатуры
                     if (!inputElements.includes(e.relatedTarget)) { // Если relatedTarget не является другим полем ввода
-                           // hideKeyboard(); // Скрываем, если фокус ушел куда-то еще, кроме другого поля ввода
+                            // hideKeyboard(); // Скрываем, если фокус ушел куда-то еще, кроме другого поля ввода
                     }
                 }
             });
@@ -357,32 +357,42 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let spreadVerdictMessage = "Вердикт по разбегу: ";
 
+        // Эти переменные p1HasHigherChances и p2HasHigherChances используются для предыдущей логики
+        // Если они не нужны для других частей кода, их можно удалить, но я оставил их для совместимости.
         let p1HasHigherChances = p1ConfidencePercent >= 75 && totalDecreaseSpreadP1 > totalIncreaseSpreadP1;
         let p2HasHigherChances = p2ConfidencePercent >= 75 && totalDecreaseSpreadP2 > totalIncreaseSpreadP2;
 
         const anySpreadMovement = (totalDecreaseSpreadP1 + totalIncreaseSpreadP1 + totalDecreaseSpreadP2 + totalIncreaseSpreadP2) > 0;
 
+        let overallSpreadWinner = null; // Будет хранить 'Игрок 1', 'Игрок 2' или null
+
         if (filledGamesCount < 2) { // Нет данных для анализа разбега
             spreadVerdictMessage += `<span class="text-warning-custom">Недостаточно данных (требуется мин. 2 гейма)</span>`;
-        } else if (p1HasHigherChances && !p2HasHigherChances) {
-            spreadVerdictMessage += `<span class="text-success-custom">**Игрок 1** имеет выше шансы.</span>`;
-        } else if (!p1HasHigherChances && p2HasHigherChances) {
-            spreadVerdictMessage += `<span class="text-success-custom">**Игрок 2** имеет выше шансы.</span>`;
-        } else if (p1HasHigherChances && p2HasHigherChances) {
-            if (p1ConfidencePercent > p2ConfidencePercent) {
-                spreadVerdictMessage += `<span class="text-info-custom">Оба игрока сильны, но у **Игрока 1** более выражена уверенность.</span>`;
-            } else if (p2ConfidencePercent > p1ConfidencePercent) {
-                spreadVerdictMessage += `<span class="text-info-custom">Оба игрока сильны, но у **Игрока 2** более выражена уверенность.</span>`;
-            } else {
-                spreadVerdictMessage += `<span class="text-info-custom">Оба игрока **сильны** (одинаковая уверенность).</span>`;
-            }
         } else {
-            if (totalIncreaseSpreadP1 > 0 || totalIncreaseSpreadP2 > 0) {
-                spreadVerdictMessage += `<span class="text-danger-custom">Неопределённо (преобладание повышения Кф. или нейтрально).</span>`;
+            // Главное условие: у кого уверенность больше, тот и победитель по разбегу
+            if (p1ConfidencePercent > p2ConfidencePercent) {
+                overallSpreadWinner = 'Игрок 1';
+                spreadVerdictMessage += `<span class="text-success-custom">Победитель по разбегу: **Игрок 1** (уверенность: ${p1ConfidencePercent.toFixed(2)}% против ${p2ConfidencePercent.toFixed(2)}%)</span>`;
+            } else if (p2ConfidencePercent > p1ConfidencePercent) {
+                overallSpreadWinner = 'Игрок 2';
+                spreadVerdictMessage += `<span class="text-success-custom">Победитель по разбегу: **Игрок 2** (уверенность: ${p2ConfidencePercent.toFixed(2)}% против ${p1ConfidencePercent.toFixed(2)}%)</span>`;
+            } else if (p1ConfidencePercent === p2ConfidencePercent && anySpreadMovement) {
+                // Если уверенность одинаковая, но есть движения, можно добавить дополнительную логику
+                // Например, кто имеет большее абсолютное снижение Кф.
+                if (totalDecreaseSpreadP1 > totalDecreaseSpreadP2) {
+                    overallSpreadWinner = 'Игрок 1';
+                    spreadVerdictMessage += `<span class="text-info-custom">Уверенность одинаковая, но **Игрок 1** имеет большее снижение Кф.</span>`;
+                } else if (totalDecreaseSpreadP2 > totalDecreaseSpreadP1) {
+                    overallSpreadWinner = 'Игрок 2';
+                    spreadVerdictMessage += `<span class="text-info-custom">Уверенность одинаковая, но **Игрок 2** имеет большее снижение Кф.</span>`;
+                } else {
+                    spreadVerdictMessage += `<span class="text-info-custom">Уверенность одинаковая, и динамика Кф. схожа.</span>`;
+                }
             } else {
-                spreadVerdictMessage += `<span class="text-warning-custom">Неопределённо (нет значимых движений Кф.).</span>`;
+                spreadVerdictMessage += `<span class="text-warning-custom">Неопределённо (нет значимых движений Кф. или равная уверенность).</span>`;
             }
         }
+
 
         document.getElementById('p1_spread_summary').innerHTML = p1SpreadDetails;
         document.getElementById('p2_spread_summary').innerHTML = p2SpreadDetails;
