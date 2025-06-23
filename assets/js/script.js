@@ -13,7 +13,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const keyboard = document.getElementById('custom-keyboard');
     let activeInput = null;
     const clearDataBtn = document.getElementById('clearDataBtn');
-    const predictionOutput = document.getElementById('predictionOutput'); // Новый элемент для вывода прогноза
 
     // Функция для блокировки нативной клавиатуры (осталась для контроля)
     function preventNativeKeyboard(e) {
@@ -30,6 +29,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         activeInput = input;
 
+        // Важно: отменяем стандартный blur и фокус для iOS, чтобы не вызывать нативную клавиатуру
+        // Вместо blur() и focus() с таймаутом, которые могут вызвать мерцание,
+        // мы просто показываем клавиатуру и устанавливаем селекцию.
+        // input.blur(); // Этот вызов может закрыть клавиатуру раньше, чем нужно
+        // input.focus(); // Может вызвать мерцание
         input.setSelectionRange(input.value.length, input.value.length); // Перемещаем курсор в конец
 
         keyboardContainer.style.display = 'flex'; // Показываем контейнер сразу
@@ -58,9 +62,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (input) {
             input.addEventListener('focus', function(e) {
                 console.log('Input focused:', this.id);
+                // Проверяем, не вызван ли фокус программно из-за нажатия на клавиатуру
+                // (актуально, если бы у кнопок клавиатуры был focus(), но у нас нет)
                 showKeyboard(this);
             });
 
+            // Для мобильных устройств: предотвращаем появление нативной клавиатуры при тапе
             input.addEventListener('touchstart', function(e) {
                 console.log('Input touchstarted:', this.id);
                 e.preventDefault(); // Предотвращаем стандартное поведение (открытие нативной клавиатуры)
@@ -71,8 +78,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
             input.addEventListener('blur', function(e) {
                 console.log('Input blurred:', this.id, 'relatedTarget:', e.relatedTarget ? e.relatedTarget.tagName : 'none');
+                // Если blur происходит из-за потери фокуса вне полей/клавиатуры, скрываем
+                // Если связанный элемент (relatedTarget) не является частью клавиатуры
+                // Проверяем, является ли следующий фокус элементом вне клавиатуры
+                // (Исправлено) - Вместо setTimeout для nextFocusedElement, используем currentTarget и relatedTarget более надежно
                 if (e.relatedTarget === null || (!keyboardContainer.contains(e.relatedTarget) && !inputElements.some(el => el === e.relatedTarget))) {
-                    if (!inputElements.includes(e.relatedTarget)) {
+                    // Проверяем, если focus уходит на другой инпут или за пределы клавиатуры
+                    if (!inputElements.includes(e.relatedTarget)) { // Если relatedTarget не является другим полем ввода
                            // hideKeyboard(); // Скрываем, если фокус ушел куда-то еще, кроме другого поля ввода
                     }
                 }
@@ -81,25 +93,28 @@ document.addEventListener('DOMContentLoaded', function() {
             input.addEventListener('input', function(e) {
                 console.log('Input value changed:', this.id, this.value);
                 let val = this.value.replace(/[^\d.]/g, ''); // Разрешаем точки
+                // Логика форматирования для X.YY
                 const parts = val.split('.');
-                if (parts.length > 2) {
+                if (parts.length > 2) { // Если больше одной точки, оставляем только первую
                     val = parts[0] + '.' + parts.slice(1).join('');
                 }
-                if (parts[0].length > 1 && !val.includes('.')) {
+                if (parts[0].length > 1 && !val.includes('.')) { // Если число >9 и нет точки, ставим 1.XX
                     val = parts[0].substring(0,1) + '.' + parts[0].substring(1,3);
                 }
-                if (val.length > this.maxLength) {
+                if (val.length > this.maxLength) { // Обрезаем по maxlength
                     val = val.substring(0, this.maxLength);
                 }
                 this.value = val;
 
-                if (this.value.length === this.maxLength && !this.value.endsWith('.')) {
+                // Автоматический переход к следующему полю, если текущее заполнено
+                if (this.value.length === this.maxLength && !this.value.endsWith('.')) { // Проверяем, что не закончилось точкой
                     const currentIndex = inputElements.indexOf(this);
                     if (currentIndex !== -1 && currentIndex < inputElements.length - 1) {
                         setTimeout(() => {
-                            inputElements[currentIndex + 1].focus();
-                        }, 10);
+                            inputElements[currentIndex + 1].focus(); // Фокус на следующий инпут
+                        }, 10); // Очень маленькая задержка для плавности
                     } else if (currentIndex === inputElements.length - 1) {
+                        // Если это последнее поле и оно заполнено, скрываем клавиатуру
                         this.blur();
                         hideKeyboard();
                     }
@@ -110,7 +125,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Обработчик кликов по кнопкам клавиатуры
     keyboard.addEventListener('click', function(e) {
-        e.preventDefault();
+        e.preventDefault(); // Предотвращаем потерю фокуса и скролл
         const button = e.target.closest('button');
         if (!button) return;
 
@@ -122,19 +137,22 @@ document.addEventListener('DOMContentLoaded', function() {
         const key = button.dataset.key;
         console.log('Keyboard button pressed:', key);
 
+        // Обновляем значение поля ввода
         let currentValue = activeInput.value;
 
         if (key === 'delete') {
             activeInput.value = currentValue.slice(0, -1);
         } else if (key === '.') {
+            // Если нет точки и поле не пустое, или поле пустое и добавляем "1."
             if (!currentValue.includes('.')) {
                 if (currentValue === '') {
-                    activeInput.value = '1.';
+                    activeInput.value = '1.'; // Автоматически добавляем "1."
                 } else {
                     activeInput.value += '.';
                 }
             }
-        } else if (currentValue.length < activeInput.maxLength) {
+        } else if (currentValue.length < activeInput.maxLength) { // Числовые кнопки (0-9)
+             // Если текущее значение "1." и вводим "0", то "1.0"
             if (currentValue === '1.' && key === '0' && activeInput.maxLength === 4) {
                 activeInput.value = '1.0';
             } else {
@@ -142,6 +160,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
+        // Принудительно вызываем событие 'input', чтобы сработала логика форматирования и автоперехода
         const event = new Event('input', { bubbles: true });
         activeInput.dispatchEvent(event);
     });
@@ -149,24 +168,28 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- Новая функция очистки данных ---
     function clearAllData() {
         console.log('Clearing all data...');
+        // Очищаем все поля ввода
         inputElements.forEach(input => {
             input.value = '';
             input.classList.remove('is-invalid');
         });
 
+        // Скрываем блоки результата и ошибки
         resultDiv.classList.remove('visible');
         errorDiv.classList.remove('visible');
-        errorText.textContent = '';
+        errorText.textContent = ''; // Очищаем текст ошибки
 
+        // Возвращаем фокус на первое поле и показываем клавиатуру
         if (inputElements.length > 0) {
             inputElements[0].focus();
-            showKeyboard(inputElements[0]);
+            showKeyboard(inputElements[0]); // Убедимся, что клавиатура показана
         }
 
-        calculateWinner(); // Пересчитываем, чтобы обновить состояние
-        determineOverallPrediction(); // Обновляем прогноз после очистки
+        // Пересчитываем, чтобы обновить состояние после очистки (покажет начальное сообщение)
+        calculateWinner();
     }
 
+    // Обработчик события для кнопки "Очистить"
     if (clearDataBtn) {
         clearDataBtn.addEventListener('click', clearAllData);
     }
@@ -177,7 +200,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let player1Coeffs = [];
         let player2Coeffs = [];
         let allCoeffsValid = true;
-        let lastFilledGameIndex = -1;
+        let lastFilledGameIndex = -1; // Индекс последнего заполненного гейма
 
         for (let i = 0; i < games.length; i++) {
             const gameNumber = games[i];
@@ -208,24 +231,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 player1Coeffs.push(isP1Valid ? p1Val : NaN);
                 player2Coeffs.push(isP2Valid ? p2Val : NaN);
 
-                if (p1Input.value.length > 0 || p2Input.value.length > 0) {
+                if (p1Input.value.length > 0 || p2Input.value.length > 0) { // Если хотя бы одно поле заполнено в гейме (даже если невалидно)
                     lastFilledGameIndex = i;
                 }
             }
         }
 
+        // Проверяем заполнение Гейма 5 как минимальное требование
+        // Если первое поле (Гейм 5 Игрок 1) или Гейм 5 Игрок 2 не заполнено, и никакие другие поля тоже не заполнены,
+        // то показываем начальное сообщение. Иначе, проверяем валидность.
         const hasAnyInput = inputElements.some(input => input.value.length > 0);
         const hasMinimumInput = !isNaN(player1Coeffs[0]) && !isNaN(player2Coeffs[0]);
 
         if (!hasAnyInput) {
+            // Если нет вообще никаких введенных данных, показываем "Введите коэффициенты для геймов 5-10"
             errorText.textContent = 'Введите коэффициенты для геймов 5-10.';
             errorDiv.classList.add('visible');
             resultDiv.classList.remove('visible');
-            // Установим прогноз по умолчанию, когда нет данных
-            if (predictionOutput) {
-                predictionOutput.textContent = 'Ожидание данных...';
-                predictionOutput.className = 'text-center text-muted mt-0 mb-0';
-            }
             return;
         }
 
@@ -233,10 +255,6 @@ document.addEventListener('DOMContentLoaded', function() {
             errorText.textContent = 'Проверьте формат коэффициентов (например, 1.85). Значения должны быть от 1.00 до 10.00.';
             errorDiv.classList.add('visible');
             resultDiv.classList.remove('visible');
-             if (predictionOutput) {
-                predictionOutput.textContent = 'Ошибка ввода!';
-                predictionOutput.className = 'text-center text-danger-custom mt-0 mb-0';
-            }
             return;
         }
 
@@ -244,16 +262,13 @@ document.addEventListener('DOMContentLoaded', function() {
             errorText.textContent = 'Для расчета необходимо заполнить коэффициенты для Гейма 5.';
             errorDiv.classList.add('visible');
             resultDiv.classList.remove('visible');
-             if (predictionOutput) {
-                predictionOutput.textContent = 'Ожидание данных...';
-                predictionOutput.className = 'text-center text-muted mt-0 mb-0';
-            }
             return;
         }
 
         errorText.textContent = '';
         errorDiv.classList.remove('visible');
 
+        // Показываем результат только если клавиатура не активна
         if (!keyboardContainer.classList.contains('show')) {
             resultDiv.classList.add('visible');
         }
@@ -266,9 +281,9 @@ document.addEventListener('DOMContentLoaded', function() {
         let totalDecreaseSpreadP2 = 0;
         let totalIncreaseSpreadP2 = 0;
 
-        let filledGamesCount = 0;
+        let filledGamesCount = 0; // Количество полностью заполненных пар геймов
 
-        for (let i = 0; i <= lastFilledGameIndex; i++) {
+        for (let i = 0; i <= lastFilledGameIndex; i++) { // Проходим только по заполненным геймам
             const p1Current = player1Coeffs[i];
             const p2Current = player2Coeffs[i];
 
@@ -277,7 +292,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 totalDecimalPlayer2 += (p2Current - Math.floor(p2Current));
                 filledGamesCount++;
 
-                if (i > 0) {
+                if (i > 0) { // Для расчета разбега нужны предыдущие данные
                     const p1Previous = player1Coeffs[i - 1];
                     const p2Previous = player2Coeffs[i - 1];
 
@@ -347,7 +362,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const anySpreadMovement = (totalDecreaseSpreadP1 + totalIncreaseSpreadP1 + totalDecreaseSpreadP2 + totalIncreaseSpreadP2) > 0;
 
-        if (filledGamesCount < 2) {
+        if (filledGamesCount < 2) { // Нет данных для анализа разбега
             spreadVerdictMessage += `<span class="text-warning-custom">Недостаточно данных (требуется мин. 2 гейма)</span>`;
         } else if (p1HasHigherChances && !p2HasHigherChances) {
             spreadVerdictMessage += `<span class="text-success-custom">**Игрок 1** имеет выше шансы.</span>`;
@@ -375,21 +390,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // --- Динамика последнего заполненного гейма ---
         let lastGameSpreadDynamicMessage = '';
-        let lastGameP1Change = 0; // Добавим для использования в прогнозе
-        let lastGameP2Change = 0; // Добавим для использования в прогнозе
-
-        if (lastFilledGameIndex > 0) {
+        if (lastFilledGameIndex > 0) { // Нужен хотя бы один предыдущий гейм
             const p1Last = player1Coeffs[lastFilledGameIndex];
             const p2Last = player2Coeffs[lastFilledGameIndex];
             const p1Prev = player1Coeffs[lastFilledGameIndex - 1];
             const p2Prev = player2Coeffs[lastFilledGameIndex - 1];
 
             if (!isNaN(p1Last) && !isNaN(p2Last) && !isNaN(p1Prev) && !isNaN(p2Prev)) {
-                const spreadP1Last = parseFloat((p1Prev - p1Last).toFixed(2)); // Округляем для точного сравнения
-                const spreadP2Last = parseFloat((p2Prev - p2Last).toFixed(2)); // Округляем
-
-                lastGameP1Change = spreadP1Last; // Сохраняем для прогноза
-                lastGameP2Change = spreadP2Last; // Сохраняем для прогноза
+                const spreadP1Last = p1Prev - p1Last;
+                const spreadP2Last = p2Prev - p2Last;
 
                 let p1ChangeText = '';
                 let p2ChangeText = '';
@@ -417,7 +426,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let player2SmallestDecimalWins = 0;
         let comparisonCount = 0;
 
-        for (let i = 0; i <= lastFilledGameIndex; i++) {
+        for (let i = 0; i <= lastFilledGameIndex; i++) { // Проходим только по заполненным геймам
             const p1Current = player1Coeffs[i];
             const p2Current = player2Coeffs[i];
 
@@ -435,7 +444,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         let smallestDecimalWinnerMessage = "Вероятный победитель (меньшая дес. часть): ";
-        let smallestDecimalWinnerClass = 'text-info-custom';
+        let smallestDecimalWinnerClass = 'text-info-custom'; // По умолчанию информационный цвет
 
         if (comparisonCount === 0) {
             smallestDecimalWinnerMessage += `<span class="text-warning-custom">Недостаточно данных (нет пар Кф. для сравнения)</span>`;
@@ -452,70 +461,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         document.getElementById('overall_winner_smallest_decimal').innerHTML = smallestDecimalWinnerMessage;
-        document.getElementById('overall_winner_smallest_decimal').className = `text-center ${smallestDecimalWinnerClass}`;
-
-
-        // Добавляем переменные для использования в determineOverallPrediction
-        window.lastGameP1Change = lastGameP1Change;
-        window.lastGameP2Change = lastGameP2Change;
-        window.totalDecimalPlayer1 = totalDecimalPlayer1;
-        window.totalDecimalPlayer2 = totalDecimalPlayer2;
+        document.getElementById('overall_winner_smallest_decimal').className = `text-center ${smallestDecimalWinnerClass}`; // Обновляем класс для цвета
     }
 
-    // Новая функция для определения общего прогноза
-    function determineOverallPrediction() {
-        let prediction = 'Ожидание данных...'; // Значение по умолчанию, пока нет валидных данных
-        let predictionClass = 'text-muted'; // Класс по умолчанию
-
-        // Проверяем, есть ли вообще какие-либо введенные данные
-        const hasAnyInput = inputElements.some(input => input.value.length > 0);
-        if (!hasAnyInput) {
-            prediction = 'Ожидание данных...';
-            predictionClass = 'text-muted';
-        } else if (errorDiv.classList.contains('visible')) {
-            prediction = 'Ошибка ввода!';
-            predictionClass = 'text-danger-custom';
-        } else if (window.totalDecimalPlayer1 === undefined || window.totalDecimalPlayer2 === undefined || (window.lastGameP1Change === undefined && window.lastGameP2Change === undefined)) {
-             prediction = 'Ожидание данных...'; // Если calculateWinner еще не обновил глобальные переменные
-             predictionClass = 'text-muted';
-        } else {
-            // 1. Приоритет: Динамика последнего гейма
-            // Критерий "сильного снижения кф.": Снижение на 0.05 или более, и при этом у второго игрока не было снижения или было увеличение
-            const p1StrongDecrease = window.lastGameP1Change > 0.04 && window.lastGameP2Change <= 0;
-            const p2StrongDecrease = window.lastGameP2Change > 0.04 && window.lastGameP1Change <= 0;
-
-            if (p1StrongDecrease && !p2StrongDecrease) {
-                prediction = 'Победит Игрок 1';
-                predictionClass = 'text-success-custom';
-            } else if (p2StrongDecrease && !p1StrongDecrease) {
-                prediction = 'Победит Игрок 2';
-                predictionClass = 'text-success-custom';
-            }
-            // Если динамика последнего гейма не является решающей, переходим к следующему приоритету
-            else {
-                // 2. Приоритет: Сумма десятичных частей
-                if (window.totalDecimalPlayer1 < window.totalDecimalPlayer2) {
-                    prediction = 'Победит Игрок 1';
-                    predictionClass = 'text-success-custom';
-                } else if (window.totalDecimalPlayer2 < window.totalDecimalPlayer1) {
-                    prediction = 'Победит Игрок 2';
-                    predictionClass = 'text-success-custom';
-                } else {
-                    prediction = 'Неопределённо'; // Десятичные части равны
-                    predictionClass = 'text-info-custom';
-                }
-            }
-        }
-
-        if (predictionOutput) {
-            predictionOutput.textContent = prediction;
-            predictionOutput.className = `text-center ${predictionClass} mt-0 mb-0`; // Применяем классы
-        }
-    }
-
-    // Инициализируем расчет и прогноз при загрузке страницы
+    // Инициализируем расчет при загрузке страницы, чтобы показать начальные сообщения
     calculateWinner();
-    determineOverallPrediction();
 
     // Присваиваем фокус первому полю при загрузке, чтобы сразу была активна клавиатура
     if (inputElements.length > 0) {
