@@ -3,7 +3,7 @@ body.bg-dark-custom {
     background: #282828 !important;
     color: #fff;
     min-height: 100vh;
-    display: flex; /* Добавлено для центрирования всего содержимого body */
+    display: flex;
     align-items: center; /* Центрирование по вертикали */
     justify-content: center; /* Центрирование по горизонтали */
     padding: 5px; /* Небольшой отступ от краев экрана */
@@ -122,6 +122,12 @@ input.is-invalid {
     color: #fff !important;
 }
 
+/* Уменьшаем отступы между колонками для компактности */
+.row > * {
+    padding-left: 1px !important; /* Уменьшаем левый отступ */
+    padding-right: 1px !important; /* Уменьшаем правый отступ */
+}
+
 /* Центрирование на десктопах */
 @media (min-width: 768px) {
     .container {
@@ -132,7 +138,7 @@ input.is-invalid {
     }
 }
 
-/* Адаптив для мобильных */
+/* Адаптив для мобильных (iPad narrow screen) */
 @media (max-width: 576px) {
     .form-label { font-size: 0.7rem; } /* Еще уменьшим размер шрифта на мобильных */
     input.form-control { font-size: 0.8rem; height: 22px; padding: 0 0.2rem; } /* Еще уменьшим поля на мобильных */
@@ -148,7 +154,7 @@ input.is-invalid {
 .fw-bold { font-weight: bold !important; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
 
-/* --- Custom Keyboard Styles (повтор из HTML для полной версии, с небольшими уточнениями) --- */
+/* --- Custom Keyboard Styles --- */
 #custom-keyboard-container {
     position: fixed;
     bottom: 0;
@@ -215,5 +221,5 @@ input.is-invalid {
 /* Дополнительные классы для результатов */
 .text-success-custom { color: #28a745 !important; } /* Зеленый для победителя */
 .text-danger-custom { color: #dc3545 !important; } /* Красный для проигравшего/неопределенности */
-.text-info-custom { color: #17a2b8 !important; }   /* Синий для информационных сообщений */
+.text-info-custom { color: #17a2b8 !important; }    /* Синий для информационных сообщений */
 .text-warning-custom { color: #ffc107 !important; } /* Желтый для предупреждений */
